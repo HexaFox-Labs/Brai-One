@@ -37,6 +37,35 @@ const imageToService = Object.freeze({
 });
 
 /**
+ * @param {string} prefix
+ * @param {string} password
+ */
+export function snapshotDumpArguments(prefix, password) {
+  assertPrefix(prefix);
+  return [
+    "exec",
+    "-e",
+    `PGPASSWORD=${password}`,
+    `${prefix}-brai-postgres`,
+    "pg_dump",
+    "--format=custom",
+    "--data-only",
+    "--no-owner",
+    "--no-privileges",
+    "--schema=brai_factory",
+    "--schema=brai_access",
+    "--exclude-table=brai_factory.schema_migrations",
+    "--exclude-table=brai_access.schema_migrations",
+    // This row is deterministic migration-owned policy, recreated before
+    // every preview restore. Keeping it in a data-only dump would make
+    // pg_restore collide with the fresh preview foundation.
+    "--exclude-table=brai_access.allocation_policies",
+    "--username=postgres",
+    "--dbname=brai_preview",
+  ];
+}
+
+/**
  * The sole host-side Docker adapter. It never accepts a shell command, a
  * source path or a container name from CI: every argument derives from the
  * strict request parser and fixed Compose source installed by root.
@@ -144,23 +173,12 @@ export class DockerRuntime {
     try {
       await streamProcess(
         "docker",
-        [
-          "exec",
-          "-e",
-          `PGPASSWORD=${await readPostgresPassword(join(this.root, "runtime", prefix, "compose.env"))}`,
-          `${prefix}-brai-postgres`,
-          "pg_dump",
-          "--format=custom",
-          "--data-only",
-          "--no-owner",
-          "--no-privileges",
-          "--schema=brai_factory",
-          "--schema=brai_access",
-          "--exclude-table=brai_factory.schema_migrations",
-          "--exclude-table=brai_access.schema_migrations",
-          "--username=postgres",
-          "--dbname=brai_preview",
-        ],
+        snapshotDumpArguments(
+          prefix,
+          await readPostgresPassword(
+            join(this.root, "runtime", prefix, "compose.env"),
+          ),
+        ),
         { stdout: createWriteStream(temporary, { mode: 0o600 }) },
       );
       const snapshot = assessSnapshotSize((await stat(temporary)).size);

@@ -56,6 +56,9 @@ The system SHALL allocate a qualifying runtime branch the lowest free slot from
 use release-priority FIFO queuing when capacity is unavailable. Each slot MUST
 use `pNN-brai-*` containers, a separate database identity seeded from the
 latest verified dev snapshot, an isolated network and a protected Caddy route.
+The data-only snapshot SHALL omit migration ledgers and immutable
+migration-owned seed records, which the preview recreates through its checked
+migrations before restoring runtime data.
 
 #### Scenario: Lowest free slot is selected
 
