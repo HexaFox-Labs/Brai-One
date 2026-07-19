@@ -35,3 +35,11 @@ migrator. This ordered step applies only to a fresh Dev or preview database.
 - **THEN** it recreates the Access foundation and checksum ledger before
   provisioning, passwording and auditing preview-local Access migration roles
 - **AND** the preview remains unavailable if the foundation step fails
+
+#### Scenario: Initial delivery is retried after a safe interruption
+
+- **WHEN** a prior first deploy created the Access foundation but did not
+  activate a manifest
+- **THEN** the controller accepts only the explicit existing-foundation result
+  and repeats migration-role checks
+- **AND** any other foundation error keeps the manifest inactive

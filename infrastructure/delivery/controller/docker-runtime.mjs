@@ -299,16 +299,31 @@ export class DockerRuntime {
 
   /** @param {string[]} compose */
   async runAccessFoundation(compose) {
-    await this.compose(compose, [
-      "run",
-      "--rm",
-      "--no-deps",
-      "--pull",
-      "never",
-      "brai-access-admin",
-      "node",
-      "dist/bootstrap-foundation.js",
-    ]);
+    try {
+      await this.compose(compose, [
+        "run",
+        "--rm",
+        "--no-deps",
+        "--pull",
+        "never",
+        "brai-access-admin",
+        "node",
+        "dist/bootstrap-foundation.js",
+      ]);
+    } catch (error) {
+      // The next bounded bootstrap/audit commands verify this existing state.
+      // Every other foundation failure remains fatal and leaves the manifest
+      // untouched.
+      if (
+        error instanceof Error &&
+        error.message.includes(
+          "brai_access_migrator already exists; use the dedicated migration command",
+        )
+      ) {
+        return;
+      }
+      throw error;
+    }
   }
 
   /** @param {string[]} compose */

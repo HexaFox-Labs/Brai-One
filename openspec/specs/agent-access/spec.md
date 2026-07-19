@@ -234,6 +234,15 @@ role-isolation audit fails.
   checked-in migrations
 - **AND** runtime containers do not start if the foundation or role audit fails
 
+#### Scenario: Initial delivery resumes after an interrupted deployment
+
+- **WHEN** a prior initial deployment left an Access foundation but no active
+  manifest
+- **THEN** delivery may reuse only that foundation and repeats the bounded role
+  bootstrap and audit sequence
+- **AND** any foundation error other than the verified existing-foundation
+  condition remains fatal
+
 ### Requirement: Access capability is accepted only by live boundary tests
 
 Unit tests and templates alone MUST NOT enable a runtime profile. Acceptance

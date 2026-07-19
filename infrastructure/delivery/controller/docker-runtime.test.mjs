@@ -103,6 +103,49 @@ test("initial runtime creates the Access foundation before its least-privilege r
   assert.ok(accessRuntimeProvision > accessMigrations);
 });
 
+test("initial runtime resumes only a verified existing Access foundation", async () => {
+  const root = await mkdtemp(join(tmpdir(), "brai-runtime-retry-"));
+  const calls = [];
+  const runtime = new DockerRuntime({
+    root,
+    composeFile: "/fixed/compose.runtime.yml",
+    execute: async (command, argumentsList) => {
+      calls.push([command, argumentsList]);
+      if (argumentsList.includes("dist/bootstrap-foundation.js")) {
+        throw new Error(
+          "Host command failed (1): brai_access_migrator already exists; use the dedicated migration command",
+        );
+      }
+    },
+  });
+
+  await runtime.deploy({
+    prefix: "d",
+    manifest,
+    changedImages: Object.fromEntries(imageNames.map((name) => [name, digest])),
+    initial: true,
+    secrets: createRuntimeSecrets(),
+  });
+
+  assert.ok(
+    calls.some(([, args]) => args.includes("dist/bootstrap-migration-role.js")),
+  );
+});
+
+test("does not accept an unexpected Access foundation failure", async () => {
+  const runtime = new DockerRuntime({
+    root: "/runtime",
+    execute: async () => {
+      throw new Error("foundation credential rejected");
+    },
+  });
+
+  await assert.rejects(
+    runtime.runAccessFoundation([]),
+    /foundation credential rejected/,
+  );
+});
+
 test("measures only the controller-owned slot volumes", async () => {
   const runtime = new DockerRuntime({
     root: "/runtime",
