@@ -24,6 +24,7 @@ permissions:
 
 jobs:
   verify-and-plan:
+    name: delivery-plan
     if: >-
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
@@ -104,6 +105,7 @@ jobs:
           retention-days: 1
 
   build-images:
+    name: build-affected-image (${{ matrix.image.image }})
     needs: verify-and-plan
     if: needs.verify-and-plan.outputs.requires_image_build == 'true'
     runs-on: ubuntu-24.04
@@ -168,6 +170,7 @@ jobs:
           retention-days: 1
 
   assemble-request:
+    name: assemble-delivery-request
     needs: [verify-and-plan, build-images]
     if: needs.verify-and-plan.outputs.requires_image_build == 'true'
     runs-on: ubuntu-24.04
@@ -242,6 +245,7 @@ jobs:
           retention-days: 1
 
   deliver:
+    name: submit-delivery-request
     needs: [verify-and-plan, assemble-request]
     if: >-
       needs.assemble-request.outputs.request_available == 'true' &&
