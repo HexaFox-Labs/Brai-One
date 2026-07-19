@@ -6,11 +6,7 @@ on:
     branches:
       - dev
       - main
-      - "feature/**"
-      - "fix/**"
-      - "docs/**"
       - "release/**"
-      - "hotfix/**"
 
 concurrency:
   group: affected-ci-${{ github.event.pull_request.number || github.ref }}

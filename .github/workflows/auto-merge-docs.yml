@@ -1,0 +1,70 @@
+name: auto-merge-docs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  enable-after-reduced-check:
+    name: enable-docs-auto-merge
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'dev' &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Enable native auto-merge only for documentation paths
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node --input-type=module <<'NODE'
+          const api = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}`;
+          const headers = {
+            accept: "application/vnd.github+json",
+            authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+            "x-github-api-version": "2022-11-28",
+          };
+          const files = [];
+          for (let page = 1; ; page += 1) {
+            const response = await fetch(
+              `${api}/pulls/${process.env.PR_NUMBER}/files?per_page=100&page=${page}`,
+              { headers },
+            );
+            if (!response.ok) throw new Error(`Cannot list PR files: ${response.status}`);
+            const pageFiles = await response.json();
+            files.push(...pageFiles.map((file) => file.filename));
+            if (pageFiles.length < 100) break;
+          }
+          const isDocumentation = (path) =>
+            path === "README.md" ||
+            path.startsWith("docs/") ||
+            path.startsWith("memory-bank/") ||
+            path.endsWith(".md");
+          if (files.length === 0 || !files.every(isDocumentation)) {
+            console.log("Not a documentation-only pull request; auto-merge remains disabled.");
+            process.exit(0);
+          }
+          const response = await fetch("https://api.github.com/graphql", {
+            method: "POST",
+            headers: { ...headers, "content-type": "application/json" },
+            body: JSON.stringify({
+              query: `mutation($id: ID!) {
+                enablePullRequestAutoMerge(input: {pullRequestId: $id, mergeMethod: SQUASH}) {
+                  pullRequest { number }
+                }
+              }`,
+              variables: { id: process.env.PR_NODE_ID },
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok || result.errors) throw new Error(JSON.stringify(result));
+          console.log("Native auto-merge enabled after required reduced checks.");
+          NODE

@@ -2,6 +2,34 @@
 
 Дата последнего обновления: `2026-07-19` (UTC)
 
+## Git Flow и affected delivery
+
+Активен OpenSpec Change `gitflow-affected-delivery`. Реализован и установлен
+host controller `/srv/opt/brai-delivery`: systemd units
+`brai-delivery.service` и `brai-delivery-sweep.timer` активны, listener
+`127.0.0.1:3490` проходит health check, а Caddy обслуживает
+`preview-01`–`preview-20.brai.one` через TLS и unified Basic Auth. Legacy
+`dev.brai.one` и production traffic не переключались.
+
+Delivery использует Nx affected catalog, digest-pinned shared OCI layers и
+root-private manifests/slot state вместо копий checkout. Controller выбирает
+lowest free `p01`–`p20`, запускает не более пяти preview, поддерживает
+release-priority FIFO, 72-hour cleanup, data-only dev snapshots и limits
+100/200/250 MiB (target snapshot/hard snapshot/slot). Container identities:
+`d-brai-*`, `pNN-brai-*`, `prod-brai-*`.
+
+GitHub repository `HexaFox-Labs/Brai-One` публичен, Actions default token
+read-only, `BRAI_DELIVERY_ENDPOINT` указывает на OIDC controller route, а
+production environment требует reviewer `HexaFox-Labs` и ограничен
+`release/*`. Внешние forks не выполняют trusted project code и не получают
+preview. Первая bootstrap-dev delivery и owner-approved cutover `dev.brai.one`
+остаются следующими operational gates; Change нельзя архивировать до них.
+
+Web build baseline устранён explicit peer `@opentelemetry/api@1.9.0`: полный
+production build проходит. Full CI прошёл format/docs/stack/policy/lint/
+typecheck/build/unit/integration; sandboxed Playwright был заблокирован на
+localhost, но тот же desktop/mobile web E2E прошёл вне command sandbox.
+
 ## Каталог инструментов и страниц стека
 
 По прямому запросу Сергея завершён и архивирован OpenSpec Change

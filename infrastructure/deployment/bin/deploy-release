@@ -84,7 +84,7 @@ fi
 
 compose() {
   docker compose \
-    --project-name brai-new \
+    --project-name prod-brai \
     --profile admin \
     --env-file "$1" \
     --file "${compose_file}" \

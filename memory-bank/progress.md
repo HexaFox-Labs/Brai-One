@@ -2,6 +2,24 @@
 
 Дата последнего обновления: `2026-07-19` (UTC)
 
+## Git Flow и affected delivery
+
+- [x] Создан OpenSpec Change `gitflow-affected-delivery`, catalog affected
+      scope, immutable manifest overlay, GitHub Actions workflow и strict
+      controller request contract.
+- [x] Установлен `/srv/opt/brai-delivery` controller, systemd service/timer и
+      Caddy routes для `preview-01`–`preview-20`; health endpoint и Basic Auth
+      boundary проверены без изменения legacy dev/prod traffic.
+- [x] Настроены GitHub variable, read-only default Actions permissions,
+      preview/development environments и protected production environment для
+      единственного reviewer на `release/*`.
+- [x] Добавлены delivery reference, ADR, permanent OpenSpec specs, controller
+      tests, workflow policy tests и production prefix `prod-brai-*`.
+- [ ] Отправить Change в primary repository, выполнить first `bootstrap_dev`
+      и проверить настоящий dev snapshot/preview deployment до legacy cutover.
+- [ ] В отдельное owner-approved окно переключить `dev.brai.one`, измерить
+      capacity и проверить реальный release/production rollback.
+
 ## Каталог инструментов и mini-landing pages
 
 - [x] Создан OpenSpec Change `tooling-catalog-and-stack-pages` с proposal,

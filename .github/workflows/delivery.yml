@@ -169,9 +169,36 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  make-images-public:
+    name: make-affected-image-public (${{ matrix.image.image }})
+    needs: [verify-and-plan, build-images]
+    if: needs.verify-and-plan.outputs.requires_image_build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.verify-and-plan.outputs.build_matrix) }}
+    steps:
+      - name: Keep the public-source image pullable without a host token
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          IMAGE_NAME: ${{ matrix.image.image }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request PATCH \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --data '{"visibility":"public"}' \
+            "https://api.github.com/user/packages/container/brai-${IMAGE_NAME}"
+
   assemble-request:
     name: assemble-delivery-request
-    needs: [verify-and-plan, build-images]
+    needs: [verify-and-plan, build-images, make-images-public]
     if: needs.verify-and-plan.outputs.requires_image_build == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -255,6 +282,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
     environment: ${{ needs.assemble-request.outputs.target == 'dev' && 'development' || 'preview' }}
     steps:
       - name: Download exact controller request
@@ -263,6 +291,7 @@ jobs:
           name: delivery-request-${{ needs.verify-and-plan.outputs.revision }}
 
       - name: Submit short-lived GitHub OIDC-authenticated request
+        id: submit
         env:
           BRAI_DELIVERY_ENDPOINT: ${{ vars.BRAI_DELIVERY_ENDPOINT }}
         run: |
@@ -271,9 +300,95 @@ jobs:
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=brai-delivery")
           oidc_token=$(node -e 'process.stdin.on("data", d => { const v = JSON.parse(d); if (!v.value) process.exit(1); process.stdout.write(v.value); })' <<<"$token_response")
-          curl --fail-with-body --silent --show-error \
+          response=$(curl --fail-with-body --silent --show-error \
             --request POST \
             --header "Authorization: Bearer $oidc_token" \
             --header "Content-Type: application/json" \
             --data @delivery-request.json \
-            "$BRAI_DELIVERY_ENDPOINT/v1/request"
+            "$BRAI_DELIVERY_ENDPOINT/v1/request")
+          echo "$response" > delivery-response.json
+          node -e '
+            const value = JSON.parse(require("node:fs").readFileSync("delivery-response.json", "utf8"));
+            if (value.url) console.log(`url=${value.url}`);
+            if (value.slot) console.log(`slot=${value.slot}`);
+            console.log(`state=${value.state}`);
+          ' >> "$GITHUB_OUTPUT"
+
+      - name: Publish precise delivery outcome in the run summary
+        env:
+          DELIVERY_STATE: ${{ steps.submit.outputs.state }}
+          DELIVERY_SLOT: ${{ steps.submit.outputs.slot }}
+          DELIVERY_URL: ${{ steps.submit.outputs.url }}
+        run: |
+          {
+            echo "## Brai delivery"
+            echo
+            echo "- State: \`${DELIVERY_STATE}\`"
+            if [[ -n "$DELIVERY_SLOT" ]]; then echo "- Slot: \`${DELIVERY_SLOT}\`"; fi
+            if [[ -n "$DELIVERY_URL" ]]; then echo "- URL: ${DELIVERY_URL}"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log into GHCR to retain the tiny full dev manifest
+        if: >-
+          needs.assemble-request.outputs.target == 'dev' &&
+          steps.submit.outputs.state == 'deployed'
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish the exact full dev image manifest as a tiny OCI artifact
+        if: >-
+          needs.assemble-request.outputs.target == 'dev' &&
+          steps.submit.outputs.state == 'deployed'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ needs.verify-and-plan.outputs.revision }}
+        run: |
+          set -euo pipefail
+          mkdir manifest-state
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from "node:fs/promises";
+          const response = JSON.parse(await readFile("delivery-response.json", "utf8"));
+          if (!response.manifest || response.manifest.revision !== process.env.REVISION) {
+            throw new Error("Controller did not return the exact deployed dev manifest");
+          }
+          await writeFile(
+            "manifest-state/manifest.json",
+            `${JSON.stringify(response.manifest, null, 2)}\n`,
+            { mode: 0o600 },
+          );
+          await writeFile("manifest-state/Dockerfile", "FROM scratch\nCOPY manifest.json /manifest.json\n");
+          NODE
+          docker buildx build --provenance=false --push \
+            --tag "ghcr.io/${GITHUB_REPOSITORY,,}/brai-delivery-manifest:dev-current" \
+            --tag "ghcr.io/${GITHUB_REPOSITORY,,}/brai-delivery-manifest:dev-${REVISION}" \
+            manifest-state
+
+      - name: Publish the exact full preview manifest for later release promotion
+        if: >-
+          needs.assemble-request.outputs.target == 'preview' &&
+          steps.submit.outputs.state == 'deployed'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ needs.verify-and-plan.outputs.revision }}
+        run: |
+          set -euo pipefail
+          mkdir manifest-state
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from "node:fs/promises";
+          const response = JSON.parse(await readFile("delivery-response.json", "utf8"));
+          if (!response.manifest || response.manifest.revision !== process.env.REVISION) {
+            throw new Error("Controller did not return the exact deployed preview manifest");
+          }
+          await writeFile(
+            "manifest-state/manifest.json",
+            `${JSON.stringify(response.manifest, null, 2)}\n`,
+            { mode: 0o600 },
+          );
+          await writeFile("manifest-state/Dockerfile", "FROM scratch\nCOPY manifest.json /manifest.json\n");
+          NODE
+          docker buildx build --provenance=false --push \
+            --tag "ghcr.io/${GITHUB_REPOSITORY,,}/brai-delivery-manifest:preview-${REVISION}" \
+            manifest-state

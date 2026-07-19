@@ -1,0 +1,823 @@
+# BEGIN BRAI-NEW DELIVERY
+
+http://preview-01.brai.one {
+  redir https://preview-01.brai.one{uri} permanent
+}
+
+preview-01.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3511 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3411 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-02.brai.one {
+  redir https://preview-02.brai.one{uri} permanent
+}
+
+preview-02.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3512 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3412 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-03.brai.one {
+  redir https://preview-03.brai.one{uri} permanent
+}
+
+preview-03.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3513 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3413 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-04.brai.one {
+  redir https://preview-04.brai.one{uri} permanent
+}
+
+preview-04.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3514 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3414 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-05.brai.one {
+  redir https://preview-05.brai.one{uri} permanent
+}
+
+preview-05.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3515 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3415 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-06.brai.one {
+  redir https://preview-06.brai.one{uri} permanent
+}
+
+preview-06.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3516 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3416 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-07.brai.one {
+  redir https://preview-07.brai.one{uri} permanent
+}
+
+preview-07.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3517 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3417 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-08.brai.one {
+  redir https://preview-08.brai.one{uri} permanent
+}
+
+preview-08.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3518 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3418 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-09.brai.one {
+  redir https://preview-09.brai.one{uri} permanent
+}
+
+preview-09.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3519 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3419 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-10.brai.one {
+  redir https://preview-10.brai.one{uri} permanent
+}
+
+preview-10.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3520 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3420 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-11.brai.one {
+  redir https://preview-11.brai.one{uri} permanent
+}
+
+preview-11.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3521 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3421 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-12.brai.one {
+  redir https://preview-12.brai.one{uri} permanent
+}
+
+preview-12.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3522 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3422 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-13.brai.one {
+  redir https://preview-13.brai.one{uri} permanent
+}
+
+preview-13.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3523 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3423 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-14.brai.one {
+  redir https://preview-14.brai.one{uri} permanent
+}
+
+preview-14.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3524 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3424 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-15.brai.one {
+  redir https://preview-15.brai.one{uri} permanent
+}
+
+preview-15.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3525 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3425 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-16.brai.one {
+  redir https://preview-16.brai.one{uri} permanent
+}
+
+preview-16.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3526 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3426 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-17.brai.one {
+  redir https://preview-17.brai.one{uri} permanent
+}
+
+preview-17.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3527 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3427 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-18.brai.one {
+  redir https://preview-18.brai.one{uri} permanent
+}
+
+preview-18.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3528 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3428 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-19.brai.one {
+  redir https://preview-19.brai.one{uri} permanent
+}
+
+preview-19.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3529 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3429 {
+      header_up -Authorization
+    }
+  }
+}
+
+http://preview-20.brai.one {
+  redir https://preview-20.brai.one{uri} permanent
+}
+
+preview-20.brai.one {
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  # The public edge prefix is intentionally removed before the loopback-only
+  # controller: its fixed HTTP contract starts at /v1, not at a Caddy path.
+  handle_path /__brai-delivery/* {
+    reverse_proxy 127.0.0.1:3490
+  }
+
+  @api path /api/*
+  handle @api {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3530 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    import brai_unified_basic_auth
+    reverse_proxy 127.0.0.1:3430 {
+      header_up -Authorization
+    }
+  }
+}
+
+# END BRAI-NEW DELIVERY

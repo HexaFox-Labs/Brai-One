@@ -1,0 +1,217 @@
+name: ${BRAI_PREFIX}-brai
+
+x-runtime-security: &runtime-security
+  init: true
+  read_only: true
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: 1m
+      max-file: "1"
+
+services:
+  brai-postgres:
+    <<: *runtime-security
+    image: ${BRAI_POSTGRES_IMAGE:?BRAI_POSTGRES_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-postgres
+    environment:
+      POSTGRES_DB: brai_preview
+      POSTGRES_PASSWORD: ${BRAI_POSTGRES_PASSWORD:?BRAI_POSTGRES_PASSWORD is required}
+      POSTGRES_USER: postgres
+    volumes:
+      - type: volume
+        source: brai-postgres-data
+        target: /var/lib/postgresql/data
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+      - /var/run/postgresql:rw,noexec,nosuid,size=8m
+    networks:
+      - brai-data
+    mem_limit: 256m
+    cpus: 0.40
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d brai_preview"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  brai-nats:
+    <<: *runtime-security
+    image: ${BRAI_NATS_IMAGE:?BRAI_NATS_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-nats
+    command: ["--config", "/etc/nats/nats-server.conf"]
+    env_file:
+      - ${BRAI_NATS_ENV:?BRAI_NATS_ENV is required}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - type: volume
+        source: brai-nats-data
+        target: /data
+    networks:
+      - brai-bus
+    mem_limit: 128m
+    cpus: 0.15
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'wget -q -O - ''http://127.0.0.1:8222/healthz?js-enabled-only=true'' | grep -q ''"status":"ok"''',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  brai-factory:
+    <<: *runtime-security
+    image: ${BRAI_FACTORY_IMAGE:?BRAI_FACTORY_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-factory
+    env_file:
+      - ${BRAI_FACTORY_ENV:?BRAI_FACTORY_ENV is required}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-bus
+      - brai-data
+    depends_on:
+      brai-nats:
+        condition: service_healthy
+      brai-postgres:
+        condition: service_healthy
+    mem_limit: 256m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+
+  brai-access:
+    <<: *runtime-security
+    image: ${BRAI_ACCESS_IMAGE:?BRAI_ACCESS_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-access
+    env_file:
+      - ${BRAI_ACCESS_ENV:?BRAI_ACCESS_ENV is required}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-bus
+      - brai-data
+    depends_on:
+      brai-nats:
+        condition: service_healthy
+      brai-postgres:
+        condition: service_healthy
+    mem_limit: 256m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+
+  brai-api-gateway:
+    <<: *runtime-security
+    image: ${BRAI_API_GATEWAY_IMAGE:?BRAI_API_GATEWAY_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-api-gateway
+    env_file:
+      - ${BRAI_GATEWAY_ENV:?BRAI_GATEWAY_ENV is required}
+    ports:
+      - target: 3201
+        published: ${BRAI_GATEWAY_PORT:?BRAI_GATEWAY_PORT is required}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-edge
+      - brai-bus
+    depends_on:
+      brai-nats:
+        condition: service_healthy
+    mem_limit: 256m
+    cpus: 0.25
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3201/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  brai-web:
+    <<: *runtime-security
+    image: ${BRAI_WEB_IMAGE:?BRAI_WEB_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-web
+    ports:
+      - target: 8080
+        published: ${BRAI_WEB_PORT:?BRAI_WEB_PORT is required}
+        host_ip: 127.0.0.1
+        protocol: tcp
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-edge
+    mem_limit: 128m
+    cpus: 0.15
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'wget -q -O - http://127.0.0.1:8080/health/live | grep -q ''"status":"ok"''',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  brai-factory-admin:
+    profiles: [admin]
+    <<: *runtime-security
+    restart: "no"
+    image: ${BRAI_FACTORY_ADMIN_IMAGE:?BRAI_FACTORY_ADMIN_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-factory-admin
+    env_file:
+      - ${BRAI_FACTORY_MIGRATIONS_ENV:?BRAI_FACTORY_MIGRATIONS_ENV is required}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-data
+
+  brai-access-admin:
+    profiles: [admin]
+    <<: *runtime-security
+    restart: "no"
+    image: ${BRAI_ACCESS_ADMIN_IMAGE:?BRAI_ACCESS_ADMIN_IMAGE must be immutable}
+    container_name: ${BRAI_PREFIX}-brai-access-admin
+    env_file:
+      - ${BRAI_ACCESS_BOOTSTRAP_ENV:?BRAI_ACCESS_BOOTSTRAP_ENV is required}
+      - ${BRAI_ACCESS_MIGRATIONS_ENV:?BRAI_ACCESS_MIGRATIONS_ENV is required}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-data
+
+networks:
+  brai-edge:
+    name: ${BRAI_PREFIX}-brai-edge
+  brai-bus:
+    name: ${BRAI_PREFIX}-brai-bus
+    internal: true
+  brai-data:
+    name: ${BRAI_PREFIX}-brai-data
+    internal: true
+
+volumes:
+  brai-postgres-data:
+    name: ${BRAI_PREFIX}-brai-postgres-data
+  brai-nats-data:
+    name: ${BRAI_PREFIX}-brai-nats-data
