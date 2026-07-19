@@ -1,0 +1,28 @@
+export {
+  UserProjectDatabase,
+  openUserProjectDatabase,
+  type CheckpointMode,
+  type OpenUserProjectDatabaseOptions,
+  type SQLiteInputValue,
+  type SQLiteOutputValue,
+  type SQLiteRow,
+  type TransactionMode,
+  type UserDatabaseBackupResult,
+  type UserDatabaseCheckpointResult,
+  type UserDatabaseTransactionOptions,
+  type UserDatabaseTransaction,
+} from "./database.js";
+export {
+  AsyncTransactionError,
+  DatabaseBackupInProgressError,
+  DatabaseClosedError,
+  InvalidUserDatabasePathError,
+  NestedTransactionError,
+  StoragePoolFullError,
+  StorageQuotaExceededError,
+  TransactionDeadlineExceededError,
+  TransactionScopeClosedError,
+  UnsupportedUserDatabaseFilesystemError,
+  UnsupportedDatabaseRuntimeError,
+  mapUserDatabaseError,
+} from "./errors.js";

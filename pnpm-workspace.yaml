@@ -1,0 +1,30 @@
+packages:
+  - apps/*
+  - services/*
+  - workers/*
+  - packages/*
+  - infrastructure/supabase
+  - infrastructure/agent-runtime
+  - infrastructure/deployment
+  - tools/generators
+  - tools/ci/integration
+  - tools/ci/policy
+
+storeDir: .pnpm-store
+verifyDepsBeforeRun: error
+
+allowBuilds:
+  core-js: false
+  cpu-features: false
+  esbuild: true
+  nx: true
+  protobufjs: false
+  sharp: true
+  ssh2: false
+  unrs-resolver: true
+
+catalog:
+  "@types/node": 22.20.1
+  eslint: 9.39.4
+  typescript: 5.9.3
+  vitest: 4.1.8

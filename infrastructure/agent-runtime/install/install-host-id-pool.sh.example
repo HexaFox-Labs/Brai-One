@@ -1,0 +1,86 @@
+#!/bin/sh
+# Reference installer. Package it under /srv/opt/brai-agent-runtime before use.
+# It is intentionally not invoked by this repository.
+set -eu
+
+readonly PRINCIPAL="brai-sandbox-map"
+readonly POOL_START="1879048192"
+readonly POOL_END="2147352575"
+readonly CHECKER="/srv/opt/brai-agent-runtime/bin/check-host-id-pool"
+readonly LOCK="/run/lock/brai-agent-runtime-host-id-pool.lock"
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "host ID pool installation requires root" >&2
+  exit 1
+fi
+
+for command in flock useradd usermod getent; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    echo "missing required command: $command" >&2
+    exit 1
+  fi
+done
+usermod_help="$(usermod --help)"
+case "$usermod_help" in
+  *"--add-subuids"*"--add-subgids"*) ;;
+  *)
+    echo "installed usermod cannot atomically add subuid/subgid ranges" >&2
+    exit 1
+    ;;
+esac
+if [ ! -x "$CHECKER" ]; then
+  echo "missing packaged host ID pool checker: $CHECKER" >&2
+  exit 1
+fi
+
+umask 077
+exec 9>"$LOCK"
+flock -x 9
+
+set +e
+"$CHECKER" --allow-absent
+state=$?
+set -e
+
+case "$state" in
+  0)
+    # Exact state is idempotent. Never rewrite a valid database.
+    exit 0
+    ;;
+  10)
+    ;;
+  *)
+    echo "host identity state is not safe for first installation" >&2
+    exit 1
+    ;;
+esac
+
+# The strict checker permits this path only when the principal and both
+# reservations are wholly absent and every existing range is collision-free.
+# NSS is checked again so an out-of-files identity cannot be shadowed.
+if getent passwd "$PRINCIPAL" >/dev/null ||
+  getent group "$PRINCIPAL" >/dev/null; then
+  echo "reservation principal already resolves through NSS" >&2
+  exit 1
+fi
+
+# A system account gets no automatic subordinate range unless useradd is
+# explicitly passed --add-subids-for-system. usermod performs the actual
+# subuid/subgid changes using shadow-utils' password-database locks.
+useradd \
+  --system \
+  --user-group \
+  --no-create-home \
+  --home-dir /nonexistent \
+  --shell /usr/sbin/nologin \
+  --no-log-init \
+  "$PRINCIPAL"
+usermod --lock --expiredate 1 "$PRINCIPAL"
+usermod \
+  --add-subuids "${POOL_START}-${POOL_END}" \
+  --add-subgids "${POOL_START}-${POOL_END}" \
+  "$PRINCIPAL"
+
+# A concurrent/manual account change, partial write, unexpected default range,
+# or any drift leaves installation failed and user-sandbox launch disabled.
+"$CHECKER"

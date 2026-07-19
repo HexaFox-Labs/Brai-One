@@ -1,0 +1,226 @@
+name: brai-new
+
+x-runtime-security: &runtime-security
+  restart: unless-stopped
+  init: true
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: 50m
+      max-file: "3"
+
+services:
+  brai-web:
+    <<: *runtime-security
+    image: ${BRAI_WEB_IMAGE:?BRAI_WEB_IMAGE must be an immutable digest reference}
+    container_name: brai-web
+    ports:
+      - target: 8080
+        published: "3200"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    networks:
+      - brai-edge
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'wget -q -O - http://127.0.0.1:8080/health/live | grep -q ''"status":"ok"''',
+        ]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    stop_grace_period: 10s
+
+  brai-api-gateway:
+    <<: *runtime-security
+    image: ${BRAI_API_GATEWAY_IMAGE:?BRAI_API_GATEWAY_IMAGE must be an immutable digest reference}
+    container_name: brai-api-gateway
+    env_file:
+      - path: /etc/brai-new/gateway.env
+        required: true
+    ports:
+      - target: 3201
+        published: "3201"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-edge
+      - brai-bus
+    depends_on:
+      brai-nats:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3201/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    stop_grace_period: 20s
+
+  brai-nats:
+    <<: *runtime-security
+    image: ${BRAI_NATS_IMAGE:?BRAI_NATS_IMAGE must be an immutable digest reference}
+    container_name: brai-nats
+    command:
+      - --config
+      - /etc/nats/nats-server.conf
+    env_file:
+      - path: /etc/brai-new/nats.env
+        required: true
+    ports:
+      - target: 4222
+        published: "4222"
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: brai-nats-data
+        target: /data
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    networks:
+      - brai-bus
+      # Solely gives Docker a routed endpoint for the loopback-only published
+      # runtime-host socket. No application container joins this network.
+      - brai-host-loopback
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'wget -q -O - ''http://127.0.0.1:8222/healthz?js-enabled-only=true'' | grep -q ''"status":"ok"''',
+        ]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 5
+    stop_grace_period: 20s
+
+  brai-factory:
+    <<: *runtime-security
+    image: ${BRAI_FACTORY_IMAGE:?BRAI_FACTORY_IMAGE must be an immutable digest reference}
+    container_name: brai-factory
+    env_file:
+      - path: /etc/brai-new/factory.env
+        required: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-bus
+      - brai-supabase
+    depends_on:
+      brai-nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 30s
+      timeout: 8s
+      start_period: 15s
+      retries: 3
+    stop_grace_period: 20s
+
+  brai-access:
+    <<: *runtime-security
+    image: ${BRAI_ACCESS_IMAGE:?BRAI_ACCESS_IMAGE must be an immutable digest reference}
+    container_name: brai-access
+    env_file:
+      - path: /etc/brai-new/access.env
+        required: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-bus
+      - brai-supabase
+    depends_on:
+      brai-nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "dist/healthcheck.js"]
+      interval: 30s
+      timeout: 8s
+      start_period: 15s
+      retries: 3
+    stop_grace_period: 20s
+
+  brai-factory-admin:
+    profiles:
+      - admin
+    image: ${BRAI_FACTORY_ADMIN_IMAGE:?BRAI_FACTORY_ADMIN_IMAGE must be an immutable digest reference}
+    container_name: brai-factory-admin
+    env_file:
+      - path: /etc/brai-new/migrations.env
+        required: true
+    read_only: true
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-supabase
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
+
+  brai-access-admin:
+    profiles:
+      - admin
+    image: ${BRAI_ACCESS_ADMIN_IMAGE:?BRAI_ACCESS_ADMIN_IMAGE must be an immutable digest reference}
+    container_name: brai-access-admin
+    env_file:
+      - path: /etc/brai-new/access-migrations.env
+        required: true
+    read_only: true
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - brai-supabase
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "3"
+
+networks:
+  brai-edge:
+    name: brai-edge
+    driver: bridge
+  brai-bus:
+    name: brai-bus
+    driver: bridge
+    internal: true
+  brai-host-loopback:
+    name: brai-host-loopback
+    driver: bridge
+  brai-supabase:
+    name: brai-supabase
+    external: true
+
+volumes:
+  brai-nats-data:
+    name: brai-nats-data

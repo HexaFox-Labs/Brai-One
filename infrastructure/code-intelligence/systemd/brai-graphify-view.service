@@ -1,0 +1,20 @@
+[Unit]
+Description=Brai New Graphify loopback graph view
+After=brai-graphify-watch.service
+
+[Service]
+Type=simple
+User=mark
+Group=mark
+WorkingDirectory=/srv/projects/brai-new/graphify-out
+ExecStart=/usr/bin/python3 -m http.server 3213 --bind 127.0.0.1 --directory /srv/projects/brai-new/graphify-out
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ReadOnlyPaths=/srv/projects/brai-new/graphify-out
+
+[Install]
+WantedBy=multi-user.target

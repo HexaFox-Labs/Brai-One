@@ -1,0 +1,24 @@
+[Unit]
+Description=Brai New Graphify continuous knowledge-graph refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mark
+Group=mark
+WorkingDirectory=/srv/projects/brai-new
+ExecStart=/srv/opt/graphify/current/bin/python /srv/projects/brai-new/infrastructure/code-intelligence/graphify-autoupdate.py
+Restart=always
+RestartSec=5
+Nice=10
+CPUQuota=50%
+MemoryMax=2G
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ReadWritePaths=/srv/projects/brai-new/graphify-out /srv/opt/graphify/state/brai-new
+
+[Install]
+WantedBy=multi-user.target

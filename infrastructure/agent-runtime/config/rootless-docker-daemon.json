@@ -1,0 +1,15 @@
+{
+  "data-root": "/data/docker",
+  "exec-root": "/data/docker-exec",
+  "features": {
+    "containerd-snapshotter": false
+  },
+  "live-restore": false,
+  "log-driver": "local",
+  "log-opts": {
+    "max-file": "3",
+    "max-size": "10m"
+  },
+  "storage-driver": "fuse-overlayfs",
+  "userland-proxy": false
+}

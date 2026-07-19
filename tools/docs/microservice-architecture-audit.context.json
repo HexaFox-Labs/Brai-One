@@ -1,0 +1,55 @@
+{
+  "source": "direct",
+  "route": "full",
+  "intent": "Аудит и backfill документации всех принятых решений Brai New: микросервисные границы, NATS, владение данными Supabase, edge-публикация, production-топология и связанные ADR. Реализация и нормативное поведение не меняются.",
+  "behaviorChanged": false,
+  "status": "complete",
+  "surfaces": ["docs", "adr", "spec", "memory", "deployment"],
+  "files": [
+    "README.md",
+    "docs",
+    "memory-bank/activeContext.md",
+    "memory-bank/progress.md",
+    "memory-bank/systemPatterns.md",
+    "memory-bank/techContext.md",
+    "openspec/specs/brai-factory/spec.md",
+    "tools/docs/microservice-architecture-audit.context.json"
+  ],
+  "evidence": {
+    "implementation": [
+      "compose.yml",
+      "infrastructure/caddy/factory.caddy",
+      "infrastructure/nats/nats-server.conf",
+      "infrastructure/supabase/migrations/0001_brai_factory.sql",
+      "openspec/specs/brai-factory/spec.md",
+      "openspec/specs/agent-access/spec.md"
+    ],
+    "checks": [
+      "pnpm run docs:check",
+      "pnpm run adr:check",
+      "openspec validate --all --strict"
+    ]
+  },
+  "docs": {
+    "status": "updated",
+    "links": [
+      "docs/reference/microservice-topology.md",
+      "docs/explanation/system-overview.md",
+      "docs/stack/infrastructure-and-operations.md",
+      "infrastructure/docker/README.md"
+    ]
+  },
+  "spec": {
+    "status": "not-required",
+    "reason": "Аудит не изменил обязательное поведение; действующие brai-factory и agent-access спецификации уже описывают соответствующие нормативные границы."
+  },
+  "adr": {
+    "status": "created",
+    "links": [
+      "docs/decisions/20260719-adopt-nats-service-owned-architecture.md",
+      "docs/decisions/20260719-adopt-node-pnpm-nx-monorepo.md",
+      "docs/decisions/20260719-adopt-server-selected-agent-access.md",
+      "docs/decisions/20260719-adopt-immutable-artifact-delivery.md"
+    ]
+  }
+}

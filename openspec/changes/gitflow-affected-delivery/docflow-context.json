@@ -1,0 +1,15 @@
+{
+  "source": "OpenSpec Change",
+  "changeId": "gitflow-affected-delivery",
+  "intent": "Implement Git Flow delivery for the public Brai repository with Nx/Lerna affected CI, immutable per-service images, safe dev and preview environments, storage budgets, and least-privilege deployment access.",
+  "surfaces": [
+    "github-actions",
+    "nx-lerna-ci",
+    "deployment",
+    "preview-runtime",
+    "agent-access",
+    "documentation",
+    "openspec"
+  ],
+  "status": "in-progress"
+}

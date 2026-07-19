@@ -1,0 +1,48 @@
+name: "${BRAI_USER_RUNTIME_NAMESPACE:?Set the per-user runtime namespace}"
+
+services:
+  postgres:
+    image: "${BRAI_USER_POSTGRES_IMAGE:?Use an approved immutable Postgres image digest}"
+    user: "${BRAI_USER_POSTGRES_UID:?Set the image postgres UID}:${BRAI_USER_POSTGRES_GID:?Set the image postgres GID}"
+    restart: unless-stopped
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_DB: "${BRAI_USER_POSTGRES_DATABASE:-project}"
+      POSTGRES_USER: "${BRAI_USER_POSTGRES_USERNAME:-project}"
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    secrets:
+      - postgres-password
+    networks:
+      - user-project-internal
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,mode=1777
+      - /var/run/postgresql:rw,noexec,nosuid,nodev,mode=0700,uid=${BRAI_USER_POSTGRES_UID},gid=${BRAI_USER_POSTGRES_GID}
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    stop_grace_period: 60s
+
+volumes:
+  postgres-data:
+    name: "${BRAI_USER_RUNTIME_NAMESPACE}_postgres_data"
+
+networks:
+  user-project-internal:
+    name: "${BRAI_USER_RUNTIME_NAMESPACE}_postgres_internal"
+    internal: true
+
+secrets:
+  postgres-password:
+    file: "${BRAI_USER_STORAGE_ROOT:?Set the quota-backed user root}/secrets/postgres-password"

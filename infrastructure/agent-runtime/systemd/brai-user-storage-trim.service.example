@@ -1,0 +1,14 @@
+# Install as /etc/systemd/system/brai-user-storage-trim.service, root:root 0644.
+[Unit]
+Description=Return freed Brai XFS extents to the sparse ext4 backing file
+Requires=srv-brai\x2duser\x2ddata.mount
+After=srv-brai\x2duser\x2ddata.mount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/fstrim --verbose /srv/brai-user-data
+Nice=19
+IOSchedulingClass=idle
+UMask=0077
+NoNewPrivileges=yes
+

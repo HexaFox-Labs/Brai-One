@@ -1,0 +1,9 @@
+{
+  "generators": {
+    "service": {
+      "factory": "./dist/generators/service/generator.js",
+      "schema": "./src/generators/service/schema.json",
+      "description": "Create a Brai NATS service or worker"
+    }
+  }
+}

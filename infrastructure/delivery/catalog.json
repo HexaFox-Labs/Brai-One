@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "documentationPaths": ["docs/", "memory-bank/", "README.md", "*.md"],
+  "controlPaths": [
+    ".github/",
+    "infrastructure/delivery/",
+    "infrastructure/deployment/",
+    "infrastructure/docker/",
+    "infrastructure/caddy/",
+    "compose.yml",
+    "nx.json",
+    "lerna.json",
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "tsconfig.base.json"
+  ],
+  "sharedRuntimeProjects": [
+    "@brai/contracts",
+    "@brai/runtime",
+    "@brai/agent-access",
+    "@brai/supabase-migrations"
+  ],
+  "runtimeServices": {
+    "@brai/web": {
+      "image": "web",
+      "build": { "dockerfile": "apps/web/Dockerfile" },
+      "root": "apps/web/",
+      "runtimeDependencies": ["@brai/api-gateway"],
+      "e2e": "web"
+    },
+    "@brai/api-gateway": {
+      "image": "api-gateway",
+      "build": { "dockerfile": "apps/api-gateway/Dockerfile" },
+      "root": "apps/api-gateway/",
+      "runtimeDependencies": ["@brai/nats"],
+      "e2e": "gateway"
+    },
+    "@brai/brai-factory": {
+      "image": "factory",
+      "build": { "dockerfile": "services/brai-factory/Dockerfile" },
+      "root": "services/brai-factory/",
+      "runtimeDependencies": ["@brai/nats"],
+      "e2e": "factory"
+    },
+    "@brai/brai-access": {
+      "image": "access",
+      "build": { "dockerfile": "services/brai-access/Dockerfile" },
+      "root": "services/brai-access/",
+      "runtimeDependencies": ["@brai/nats"],
+      "e2e": "access"
+    },
+    "@brai/nats": {
+      "image": "nats",
+      "build": { "dockerfile": "infrastructure/nats/Dockerfile" },
+      "root": "infrastructure/nats/",
+      "runtimeDependencies": [],
+      "e2e": "broker"
+    }
+  },
+  "adminImages": {
+    "factory-admin": {
+      "root": "infrastructure/supabase/",
+      "migrationFor": "@brai/brai-factory",
+      "build": { "dockerfile": "infrastructure/supabase/Dockerfile" }
+    },
+    "access-admin": {
+      "root": "services/brai-access/",
+      "migrationFor": "@brai/brai-access",
+      "build": { "dockerfile": "services/brai-access/Dockerfile.admin" }
+    }
+  }
+}

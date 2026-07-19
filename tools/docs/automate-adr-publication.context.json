@@ -1,0 +1,52 @@
+{
+  "source": "openspec",
+  "changeId": "automate-adr-publication",
+  "route": "full",
+  "intent": "Автоматически проверять, собирать и атомарно публиковать valid ADR source на adr.brai.one через least-privilege systemd path/timer без ручного действия пользователя и с тёмной static-темой Brai.",
+  "behaviorChanged": true,
+  "surfaces": ["docs", "adr", "spec", "memory", "deployment", "config", "code"],
+  "files": [
+    "openspec/changes/automate-adr-publication",
+    "openspec/specs/adr-publication/spec.md",
+    "infrastructure/adr",
+    "tools/docs",
+    "docs/decisions",
+    "docs/decisions/20260718-adopt-log4brains-for-brai-new.md",
+    "docs/decisions/20260718-adopt-docflow-governance.md",
+    "docs/documentation-methodology.md",
+    "docs/reference/commands.md",
+    "docs/README.md",
+    "memory-bank/activeContext.md",
+    "memory-bank/progress.md",
+    "memory-bank/systemPatterns.md",
+    "memory-bank/techContext.md",
+    "AGENTS.md",
+    "package.json",
+    "infrastructure/docker/DEPLOYMENT.fragment.md"
+  ],
+  "status": "complete",
+  "evidence": {
+    "checks": [
+      "node --test infrastructure/adr/auto-publish.test.mjs tools/docs/apply-adr-theme.test.mjs",
+      "pnpm run adr:check",
+      "pnpm run docs:check",
+      "openspec validate --all --strict"
+    ],
+    "production": "systemd path/timer enabled; automatic release autopublish-20260719044346605-1d8ddc6b9429 promoted; isolated Chrome DevTools verified adr.brai.one desktop/mobile"
+  },
+  "docs": {
+    "status": "updated",
+    "links": ["infrastructure/adr/README.md", "docs/reference/commands.md"]
+  },
+  "spec": {
+    "status": "updated",
+    "links": ["openspec/specs/adr-publication/spec.md"]
+  },
+  "adr": {
+    "status": "updated",
+    "links": [
+      "docs/decisions/20260718-adopt-log4brains-for-brai-new.md",
+      "docs/decisions/20260718-adopt-docflow-governance.md"
+    ]
+  }
+}

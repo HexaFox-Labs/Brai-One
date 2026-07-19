@@ -1,0 +1,7 @@
+graphify-out/
+graphify-out.bootstrap/
+docs/
+openspec/
+memory-bank/
+.codex/
+*.md

@@ -1,0 +1,25 @@
+[Unit]
+Description=Brai New SocratiCode persistent index supervisor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mark
+Group=mark
+WorkingDirectory=/srv/projects/brai-new
+Environment=OLLAMA_URL=http://127.0.0.1:11435
+ExecStart=/srv/opt/node-v22.16.0/bin/node /srv/projects/brai-new/infrastructure/code-intelligence/socraticode-supervisor.mjs
+Restart=always
+RestartSec=15
+Nice=10
+CPUQuota=50%
+MemoryMax=2G
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ReadWritePaths=/srv/opt/graphify/state/brai-new
+
+[Install]
+WantedBy=multi-user.target

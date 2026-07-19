@@ -1,0 +1,20 @@
+[Unit]
+Description=Brai New Graphify official viewer renderer
+After=brai-graphify-watch.service
+Requires=brai-graphify-watch.service
+
+[Service]
+Type=oneshot
+User=mark
+Group=mark
+WorkingDirectory=/srv/projects/brai-new
+Environment=GRAPHIFY_VIZ_NODE_LIMIT=10000
+ExecStart=/srv/opt/node-v22.16.0/bin/node /srv/projects/brai-new/infrastructure/code-intelligence/graphify-render.mjs
+Nice=10
+CPUQuota=50%
+MemoryMax=2G
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ReadWritePaths=/srv/projects/brai-new/graphify-out

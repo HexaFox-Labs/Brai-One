@@ -1,0 +1,14 @@
+{
+  "sliceName": "brai-users.slice",
+  "limits": {
+    "memoryMaxBytes": 25769803776,
+    "memorySwapMaxBytes": 4294967296,
+    "cpuQuotaPercent": 600,
+    "tasksMax": 12288
+  },
+  "minimumLaunchHeadroom": {
+    "memoryBytes": 1073741824,
+    "memorySwapBytes": 0,
+    "tasks": 256
+  }
+}

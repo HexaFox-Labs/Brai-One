@@ -1,0 +1,16 @@
+{
+  "name": "@brai/deployment",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint bin lib test",
+    "test": "vitest run test",
+    "typecheck": "tsc -p tsconfig.json --noEmit && bash -n bin/audit-deploy-principal bin/deploy-release bin/finalize-deploy-activation bin/pre-migration-backup install-host-tooling.sh lib/deploy-principal.sh"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.8"
+  }
+}

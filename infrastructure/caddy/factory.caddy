@@ -1,0 +1,36 @@
+# BEGIN BRAI-NEW FACTORY
+http://factory.brai.one {
+  redir https://factory.brai.one{uri} permanent
+}
+
+factory.brai.one {
+  import brai_unified_basic_auth
+
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  @api path /api/*
+  handle @api {
+    reverse_proxy 127.0.0.1:3201 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:3200 {
+      header_up -Authorization
+    }
+  }
+}
+# END BRAI-NEW FACTORY

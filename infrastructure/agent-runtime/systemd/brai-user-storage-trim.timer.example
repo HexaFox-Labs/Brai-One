@@ -1,0 +1,13 @@
+# Install as /etc/systemd/system/brai-user-storage-trim.timer, root:root 0644.
+[Unit]
+Description=Daily sparse-space reclamation for Brai user storage
+
+[Timer]
+OnCalendar=daily
+Persistent=yes
+RandomizedDelaySec=30m
+Unit=brai-user-storage-trim.service
+
+[Install]
+WantedBy=timers.target
+

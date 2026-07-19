@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "description": "Isolated Chrome DevTools QA for Brai Factory",
+      "command": "/srv/opt/chrome-devtools-mcp/node_modules/.bin/chrome-devtools-mcp",
+      "args": [
+        "--headless",
+        "--isolated",
+        "--executablePath",
+        "/usr/bin/google-chrome",
+        "--no-usage-statistics",
+        "--no-performance-crux",
+        "--allowed-url-pattern",
+        "http://127.0.0.1:*/*",
+        "--allowed-url-pattern",
+        "http://localhost:*/*",
+        "--allowed-url-pattern",
+        "https://*.brightos.world/*",
+        "--allowed-url-pattern",
+        "https://*.brai.one/*"
+      ],
+      "lifecycle": "keep-alive"
+    }
+  },
+  "imports": []
+}

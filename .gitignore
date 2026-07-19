@@ -1,0 +1,17 @@
+node_modules/
+.pnpm-store/
+.nx/
+.next/
+out/
+dist/
+coverage/
+test-results/
+playwright-report/
+__pycache__/
+*.pyc
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+graphify-out/

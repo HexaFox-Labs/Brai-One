@@ -1,0 +1,15 @@
+# Reference only. Generate/install from the root-owned host resource policy.
+[Unit]
+Description=Aggregate resource boundary for all Brai user sandboxes
+
+[Slice]
+CPUAccounting=yes
+MemoryAccounting=yes
+TasksAccounting=yes
+CPUQuota=600%
+MemoryMax=24G
+MemorySwapMax=4G
+TasksMax=12288
+
+# Deliberately no [Install] section. Sandbox launch stays disabled until the
+# trusted launcher measures this exact active boundary and admits the launch.

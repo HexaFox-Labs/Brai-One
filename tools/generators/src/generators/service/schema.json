@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "cli": "nx",
+  "$id": "BraiService",
+  "title": "Brai service generator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Service name, with or without the brai- prefix",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
+      "x-prompt": "Service name"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["service", "worker"],
+      "default": "service",
+      "description": "Target directory family"
+    },
+    "database": {
+      "type": "boolean",
+      "default": false,
+      "description": "Create a private schema, bounded runtime-role policy, and DATABASE_URL config"
+    }
+  },
+  "required": ["name"]
+}

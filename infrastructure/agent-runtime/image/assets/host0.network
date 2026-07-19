@@ -1,0 +1,14 @@
+[Match]
+Kind=veth
+Name=host0
+Virtualization=container
+
+[Network]
+DHCP=ipv4
+LinkLocalAddressing=no
+IPv6AcceptRA=no
+
+[DHCPv4]
+UseDNS=yes
+UseRoutes=yes
+UseTimezone=no

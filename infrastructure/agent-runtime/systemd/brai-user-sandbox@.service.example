@@ -1,0 +1,49 @@
+# Reference template only. Install as root-owned 0644 only after preflight passes.
+# The trusted launcher supplies %i from a verified, current server snapshot.
+[Unit]
+Description=Brai isolated user sandbox %i
+RequiresMountsFor=/srv/brai-user-data
+Requires=brai-users.slice srv-brai\x2duser\x2ddata.mount brai-user-firewall.service brai-user-engine@%i.service
+After=local-fs.target brai-users.slice srv-brai\x2duser\x2ddata.mount brai-user-firewall.service brai-user-engine@%i.service
+
+[Service]
+Type=simple
+Slice=brai-users.slice
+User=root
+Group=root
+KillMode=mixed
+Delegate=yes
+Restart=no
+MemoryMax=1G
+MemorySwapMax=512M
+TasksMax=512
+CPUQuota=50%
+IOWeight=100
+EnvironmentFile=/etc/brai-agent-runtime/environments/%i.env
+# Re-measure both the outer ext4 floor and inner XFS floor immediately before
+# each launch. The kernel project quota remains the per-user hard boundary.
+ExecStartPre=/srv/opt/brai-agent-runtime/bin/status-user-storage
+ExecStartPre=/usr/bin/test -S /run/brai-user-engines/%i/docker.sock
+# The stable 131072-ID outer range contains both the image UIDs and the
+# inner rootless Docker subordinate range. BRAI_USERNS_START and
+# BRAI_USER_DATA are allocated once by the trusted provisioner, never by a
+# client or agent. The data directory is owned by START+1000 so it appears as
+# the immutable image's `brai` UID 1000 without recursive ownership repair.
+# START must be slot 0..2046 from the exact host-wide
+# 0x70000000..0x7FFDFFFF brai-sandbox-map reservation. Never use `pick`.
+# The deployment-owned helper must open image+sidecar with O_NOFOLLOW, verify
+# root ownership/modes and digest through that descriptor, retain it, then exec
+# /usr/bin/systemd-nspawn with the inherited image FD at /proc/self/fd/N.
+# Replacing this helper with a direct --image=<path> reintroduces a TOCTOU race.
+# The Docker API socket belongs to a host-level rootless engine running as this
+# slot's unique mapped `brai` UID. The engine has a systemd-private mount
+# namespace with only this quota root writable and explicit inaccessible host
+# paths. Therefore Docker bind requests cannot resolve the project checkout,
+# credentials, another user's data, or a host runtime socket. The socket is
+# mounted only into the matching nspawn sandbox.
+ExecStart=/srv/opt/brai-agent-runtime/bin/verified-nspawn --image=/srv/opt/brai-agent-runtime/images/user-sandbox-v1.raw -- /usr/bin/systemd-nspawn --quiet --keep-unit --settings=no --register=yes --link-journal=no --machine=%i --hostname=%i --read-only --private-users=${BRAI_USERNS_START}:131072 --private-users-ownership=map --private-network --network-veth --bind=${BRAI_USER_DATA}:/data --bind=/run/brai-user-engines/%i:/run/user/1000 --bind=/var/lib/brai-agent-runtime/user-gates/%i:/run/brai-agent-gates --setenv=HOME=/data/home --setenv=XDG_CONFIG_HOME=/data/config --setenv=XDG_CACHE_HOME=/data/cache --setenv=XDG_DATA_HOME=/data/local/share --setenv=DOCKER_CONFIG=/data/config/docker-client --setenv=DOCKER_TMPDIR=/data/tmp --setenv=TMPDIR=/data/tmp --setenv=SQLITE_TMPDIR=/data/tmp --setenv=DOCKER_HOST=unix:///run/user/1000/docker.sock --boot
+TimeoutStartSec=90
+TimeoutStopSec=45
+
+# Deliberately no [Install] section: activation belongs to the trusted launcher,
+# never to a user, agent, client request, or boot-wide enablement.

@@ -1,0 +1,37 @@
+{
+  "name": "@brai/access-policy-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.3 <23"
+  },
+  "scripts": {
+    "access-policy": "tsx src/check.ts",
+    "lint": "eslint src test vitest.config.ts",
+    "test": "NODE_ENV=test vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "nx": {
+    "name": "tools-access-policy",
+    "targets": {
+      "access-policy": {
+        "cache": false,
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsx tools/ci/policy/src/check.ts",
+          "cwd": "."
+        }
+      },
+      "test": {
+        "cache": false
+      }
+    }
+  }
+}

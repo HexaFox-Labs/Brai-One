@@ -1,0 +1,9 @@
+abi <abi/4.0>,
+include <tunables/global>
+
+profile brai-user-engine-rootlesskit /srv/opt/brai-user-engine/bin/rootlesskit flags=(unconfined) {
+  userns,
+
+  include if exists <local/brai-user-engine-rootlesskit>
+}
+

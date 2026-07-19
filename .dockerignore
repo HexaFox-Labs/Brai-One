@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/out
+**/dist
+**/coverage
+**/test-results
+**/.cache
+**/playwright-report
+.pnpm-store
+.nx
+.git
+.env
+.env.*
+!**/.env.example

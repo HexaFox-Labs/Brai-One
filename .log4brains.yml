@@ -1,0 +1,4 @@
+project:
+  name: Brai New
+  tz: Etc/UTC
+  adrFolder: ./docs/decisions

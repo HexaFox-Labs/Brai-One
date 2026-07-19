@@ -1,0 +1,20 @@
+[Unit]
+Description=Brai New Graphify loopback MCP service
+After=brai-graphify-watch.service
+
+[Service]
+Type=simple
+User=mark
+Group=mark
+WorkingDirectory=/srv/projects/brai-new
+ExecStart=/srv/opt/graphify/current/bin/python -m graphify.serve /srv/projects/brai-new/graphify-out/graph.json --transport http --host 127.0.0.1 --port 3212
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ReadOnlyPaths=/srv/projects/brai-new/graphify-out
+
+[Install]
+WantedBy=multi-user.target

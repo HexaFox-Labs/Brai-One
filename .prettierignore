@@ -1,0 +1,9 @@
+.codex/skills/openspec-*/
+.nx/
+**/.cache/
+**/coverage/
+**/dist/
+**/out/
+**/playwright-report/
+**/test-results/
+openspec/changes/archive/

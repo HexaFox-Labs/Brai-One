@@ -1,0 +1,38 @@
+# BEGIN BRAI-NEW CODEGRAPH
+http://codegraph.brai.one {
+  redir https://codegraph.brai.one{uri} permanent
+}
+
+codegraph.brai.one {
+  import brai_unified_basic_auth
+
+  tls {
+    issuer acme {
+      disable_http_challenge
+    }
+  }
+
+  encode zstd gzip
+
+  header {
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "DENY"
+  }
+
+  redir / /graph.html 302
+
+  @mcp path /mcp*
+  handle @mcp {
+    reverse_proxy 127.0.0.1:3212 {
+      header_up -Authorization
+    }
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:3213 {
+      header_up -Authorization
+    }
+  }
+}
+# END BRAI-NEW CODEGRAPH

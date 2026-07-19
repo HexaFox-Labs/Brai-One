@@ -1,0 +1,52 @@
+{
+  "profiles": ["developer", "user-sandbox"],
+  "developer": {
+    "hostUser": "mark",
+    "checkout": "/srv/projects/brai-new",
+    "requireNonInteractiveSudo": true
+  },
+  "userSandbox": {
+    "enabled": false,
+    "storageMount": "/srv/brai-user-data",
+    "storageBackingFile": "/srv/brai-storage/user-data.xfs",
+    "storageBackingKind": "one-shared-bounded-sparse-file",
+    "aggregateLogicalCeilingBytes": 6442450944,
+    "logicalCeilingFile": "/etc/brai-agent-runtime/storage-ceiling-bytes",
+    "outerFilesystem": "root-ext4",
+    "requiredFilesystem": "xfs",
+    "requiredMountOption": "prjquota",
+    "requiredMountSource": "/dev/loopN",
+    "minimumOuterFreeFraction": 0.1,
+    "minimumInnerFreeFraction": 0.1,
+    "sparseReclamation": {
+      "mountDiscardMode": "nodiscard",
+      "timer": "brai-user-storage-trim.timer",
+      "schedule": "daily"
+    },
+    "minimumLaunchGateFreeFraction": 0.1,
+    "defaultHardLimitBytes": 5368709120,
+    "defaultHardLimitInodes": 500000,
+    "allocation": {
+      "outerIdRangeBase": 1879048192,
+      "outerIdRangeSize": 131072,
+      "outerIdPoolCount": 268304384,
+      "maxAllocationSlot": 2046,
+      "imageBraiId": 1000,
+      "innerSubordinateOffset": 65536,
+      "innerSubordinateRangeSize": 65536,
+      "xfsProjectIdBase": 10000
+    },
+    "sharedReadOnlyImage": "/srv/opt/brai-agent-runtime/images/user-sandbox-v1.raw",
+    "dataBindTarget": "/data",
+    "dataBindsPerEnvironment": 1,
+    "environmentCardinality": "one-per-user",
+    "aggregateResourcePolicy": "config/host-resource-policy.example.json",
+    "resourceLimits": {
+      "memoryMaxBytes": 4294967296,
+      "memorySwapMaxBytes": 2147483648,
+      "tasksMax": 2048,
+      "cpuQuotaPercent": 200,
+      "ioWeight": 100
+    }
+  }
+}

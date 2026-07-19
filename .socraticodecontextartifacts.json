@@ -1,0 +1,9 @@
+{
+  "artifacts": [
+    {"name":"agent-rules","path":"./AGENTS.md","description":"Required agent workflow and project boundaries."},
+    {"name":"documentation","path":"./docs","description":"Current architecture, operations and decision documentation."},
+    {"name":"openspec","path":"./openspec/specs","description":"Permanent normative OpenSpec requirements."},
+    {"name":"memory-bank","path":"./memory-bank","description":"Current durable project context."},
+    {"name":"infrastructure","path":"./infrastructure","description":"Caddy, deployment, runtime and data infrastructure sources."}
+  ]
+}

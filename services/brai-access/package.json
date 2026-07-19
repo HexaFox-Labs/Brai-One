@@ -1,0 +1,54 @@
+{
+  "name": "@brai/brai-access",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "engines": {
+    "node": ">=22.22.3 <23"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./trusted-adapter": {
+      "types": "./dist/trusted-adapter.d.ts",
+      "import": "./dist/trusted-adapter.js"
+    }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "audit:migration-role": "tsx src/audit-migration-role.ts",
+    "audit:runtime-role": "tsx src/audit-runtime-role.ts",
+    "bootstrap:foundation": "tsx src/bootstrap-foundation.ts",
+    "bootstrap:migration-role": "tsx src/bootstrap-migration-role.ts",
+    "build": "tsc -p tsconfig.json",
+    "healthcheck": "node dist/healthcheck.js",
+    "lint": "eslint src test",
+    "migrate": "tsx src/migrate.ts",
+    "provision:migration-role": "tsx src/provision-migration-role.ts",
+    "provision:runtime-role": "tsx src/provision-runtime-role.ts",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@brai/agent-access": "workspace:*",
+    "@brai/contracts": "workspace:*",
+    "@brai/nats": "workspace:*",
+    "@brai/runtime": "workspace:*",
+    "pg": "8.16.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@types/pg": "8.15.5",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.8"
+  }
+}

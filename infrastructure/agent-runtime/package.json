@@ -1,0 +1,32 @@
+{
+  "name": "@brai/agent-runtime-infrastructure",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.3 <23"
+  },
+  "scripts": {
+    "acceptance:developer-runtime": "tsx src/developer-runtime-acceptance.ts",
+    "build": "tsc -p tsconfig.build.json && esbuild src/runtime-host-main.ts --bundle --platform=node --target=node22 --format=esm --banner:js='import { createRequire as __braiCreateRequire } from \"node:module\";\nconst require = __braiCreateRequire(import.meta.url);' --outfile=dist/runtime-host-main.bundle.js && esbuild src/host-id-pool-cli.ts --bundle --platform=node --target=node22 --format=esm --banner:js='import { createRequire as __braiCreateRequire } from \"node:module\";\nconst require = __braiCreateRequire(import.meta.url);' --outfile=dist/host-id-pool-cli.bundle.js && esbuild src/developer-preflight-cli.ts --bundle --platform=node --target=node22 --format=esm --banner:js='import { createRequire as __braiCreateRequire } from \"node:module\";\nconst require = __braiCreateRequire(import.meta.url);' --outfile=dist/developer-preflight-cli.bundle.js",
+    "acceptance:developer-runtime-gate": "tsx src/developer-runtime-gate-acceptance.ts",
+    "lint": "eslint src test acceptance/*.ts vitest.config.ts",
+    "check:host-id-pool": "tsx src/host-id-pool-cli.ts",
+    "preflight": "tsx src/cli.ts",
+    "test": "NODE_ENV=test vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@brai/agent-access": "workspace:*",
+    "@brai/contracts": "workspace:*",
+    "@brai/nats": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "esbuild": "0.28.1",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.8"
+  }
+}

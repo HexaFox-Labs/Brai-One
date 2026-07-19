@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+umask 077
+
+readonly deployment_root=/srv/opt/brai-new-deploy
+# shellcheck disable=SC1091
+source "${deployment_root}/lib/deploy-principal.sh"
+
+brai_deploy_require_root
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: finalize-deploy-activation <root-owned-mode-0600-public-key>" >&2
+  exit 1
+fi
+
+for command in flock ssh-keygen sudo visudo; do
+  if ! command -v "${command}" >/dev/null 2>&1; then
+    echo "Required host command is missing: ${command}" >&2
+    exit 1
+  fi
+done
+
+exec 9>"/run/lock/brai-new-deploy.lock"
+if ! flock -n 9; then
+  echo "A Brai deployment or activation is already running" >&2
+  exit 1
+fi
+
+canonical_key=$(brai_deploy_read_canonical_key "$1")
+state=$(brai_deploy_detect_state)
+if [[ ${state} == active ]]; then
+  brai_deploy_assert_active
+  installed_key=$(brai_deploy_read_canonical_key \
+    "${BRAI_DEPLOY_EXPECTED_KEY}")
+  if [[ ${installed_key} != "${canonical_key}" ]]; then
+    echo "Refusing to replace an active deployment key" >&2
+    exit 1
+  fi
+  echo "deploy_principal=active"
+  exit 0
+fi
+brai_deploy_assert_inactive
+
+temporary_expected_key=
+temporary_authorized_keys=
+temporary_sudoers=
+activated=0
+cleanup() {
+  rm -f \
+    "${temporary_expected_key}" \
+    "${temporary_authorized_keys}" \
+    "${temporary_sudoers}"
+  if [[ ${activated} -eq 1 ]]; then
+    rm -f \
+      "${BRAI_DEPLOY_AUTHORIZED_KEYS}" \
+      "${BRAI_DEPLOY_EXPECTED_KEY}" \
+      "${BRAI_DEPLOY_SUDOERS}"
+  fi
+}
+trap cleanup EXIT
+
+temporary_expected_key=$(mktemp /etc/brai-new/.deploy-key.XXXXXX)
+temporary_authorized_keys=$(mktemp \
+  "${BRAI_DEPLOY_SSH_DIR}/.authorized_keys.XXXXXX")
+temporary_sudoers=$(mktemp /etc/sudoers.d/.brai-new-deploy.XXXXXX)
+printf '%s\n' "${canonical_key}" >"${temporary_expected_key}"
+printf '%s\n' \
+  "$(brai_deploy_expected_authorized_key "${canonical_key}")" \
+  >"${temporary_authorized_keys}"
+printf '%s\n' "$(brai_deploy_expected_sudoers)" >"${temporary_sudoers}"
+chown root:root \
+  "${temporary_expected_key}" \
+  "${temporary_authorized_keys}" \
+  "${temporary_sudoers}"
+chmod 0600 "${temporary_expected_key}" "${temporary_authorized_keys}"
+chmod 0440 "${temporary_sudoers}"
+visudo -cf "${temporary_sudoers}" >/dev/null
+
+# Install sudo first and the SSH entry last. An interrupted activation can
+# therefore never expose an SSH key whose forced command has broader rights.
+activated=1
+mv -f "${temporary_sudoers}" "${BRAI_DEPLOY_SUDOERS}"
+mv -f "${temporary_expected_key}" "${BRAI_DEPLOY_EXPECTED_KEY}"
+mv -f "${temporary_authorized_keys}" "${BRAI_DEPLOY_AUTHORIZED_KEYS}"
+brai_deploy_assert_active
+activated=0
+trap - EXIT
+
+echo "deploy_principal=active"

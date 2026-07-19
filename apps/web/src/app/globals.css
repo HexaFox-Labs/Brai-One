@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --font-app-sans:
+    var(--font-geist-sans, ui-sans-serif), system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-app-mono:
+    var(--font-geist-mono, ui-monospace), "SFMono-Regular", "SF Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
+
+  --background: #08090a;
+  --surface: #111214;
+  --surface-raised: #17181b;
+  --surface-hover: #1d1f23;
+  --input: #0c0d0f;
+
+  --foreground: #f4f4f5;
+  --muted: #858890;
+  --muted-strong: #b3b5bb;
+
+  --border: #25272b;
+  --border-strong: #35383e;
+  --border-hover: #4a4e56;
+
+  --accent: #d33434;
+  --accent-hover: #e03c3c;
+  --accent-focus: #f05050;
+  --accent-ring: #ff5a5a;
+  --accent-foreground: #fff7f7;
+
+  --danger: #ff7676;
+  --danger-foreground: #ffd6d6;
+  --danger-muted: #efa4a4;
+  --danger-surface: #241113;
+
+  --warning: #c99954;
+  --warning-foreground: #f0d5ad;
+  --warning-muted: #cdb58f;
+  --warning-surface: #201a11;
+
+  --success: #84c99d;
+}
+
+@theme inline {
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-input: var(--input);
+
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-strong: var(--muted-strong);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-hover: var(--border-hover);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-focus: var(--accent-focus);
+  --color-accent-ring: var(--accent-ring);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-muted: var(--danger-muted);
+  --color-danger-surface: var(--danger-surface);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-muted: var(--warning-muted);
+  --color-warning-surface: var(--warning-surface);
+
+  --color-success: var(--success);
+
+  --shadow-panel: 0 18px 50px rgb(0 0 0 / 0.2);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-height: 100%;
+    background: var(--background);
+  }
+
+  body {
+    min-height: 100dvh;
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-app-sans);
+    font-weight: 400;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 65%, transparent);
+    color: var(--foreground);
+  }
+
+  :focus-visible {
+    outline: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,20 @@
+# Install without the .example suffix. The escaped filename is required by
+# systemd for the exact mount point /srv/brai-user-data.
+[Unit]
+Description=Brai shared bounded user-data XFS pool
+Requires=brai-user-storage-setup.service
+After=brai-user-storage-setup.service
+Before=brai-users.slice
+
+[Mount]
+What=/srv/brai-storage/user-data.xfs
+Where=/srv/brai-user-data
+Type=xfs
+# Synchronous discard is deliberately disabled for predictable workload
+# latency. The root-owned daily fstrim unit punches freed XFS extents back into
+# holes in the sparse ext4 backing file.
+Options=loop,prjquota,nodev,nosuid,nodiscard
+TimeoutSec=90
+
+[Install]
+WantedBy=local-fs.target

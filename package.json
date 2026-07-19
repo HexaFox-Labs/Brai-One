@@ -1,0 +1,53 @@
+{
+  "name": "brai-new",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.13.1",
+  "engines": {
+    "node": ">=22.22.3 <23",
+    "pnpm": ">=11.13.1 <12"
+  },
+  "scripts": {
+    "build": "NX_DAEMON=false nx run-many -t build --all",
+    "ci": "NODE_ENV=test node tools/ci/run.mjs",
+    "lint": "NX_DAEMON=false nx run-many -t lint --all",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "postinstall": "node --input-type=module -e \"if (process.env.npm_command === 'ci') await import('./tools/ci/postinstall.mjs')\"",
+    "preflight:access": "tsx tools/ci/policy/src/check.ts --expected-owner mark",
+    "test": "NODE_ENV=test NX_DAEMON=false nx run-many -t test --all",
+    "typecheck": "NX_DAEMON=false nx run-many -t typecheck --all",
+    "generate:service": "pnpm --filter @brai/generators build && NX_DAEMON=false nx generate @brai/generators:service",
+    "adr:list": "log4brains adr list",
+    "adr:preview": "log4brains preview",
+    "adr:build": "node tools/docs/build-adr.mjs",
+    "adr:check": "node tools/docs/adr-check.mjs",
+    "adr:publish": "node tools/docs/publish-adr.mjs",
+    "adr:auto-publish": "node infrastructure/adr/auto-publish.mjs",
+    "adr:auto-publish:test": "node --test infrastructure/adr/auto-publish.test.mjs",
+    "adr:cutover": "node infrastructure/adr/cutover-caddy.mjs",
+    "docs:check": "node tools/docs/docs-check.mjs",
+    "stack:generate": "node tools/stack/catalog.mjs generate",
+    "stack:check": "node tools/stack/catalog.mjs check",
+    "docflow": "node tools/docs/docflow.mjs",
+    "compose:config": "docker compose config",
+    "compose:build": "docker compose build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "@nx/devkit": "23.1.0",
+    "@nx/js": "23.1.0",
+    "@nx/plugin": "23.1.0",
+    "@types/node": "22.20.1",
+    "eslint": "9.39.4",
+    "lerna": "9.0.7",
+    "log4brains": "1.1.0",
+    "nx": "23.1.0",
+    "prettier": "3.9.5",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.64.0",
+    "vitest": "4.1.8"
+  }
+}

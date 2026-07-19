@@ -1,0 +1,9 @@
+[Unit]
+Description=Brai New Graphify official viewer trigger
+
+[Path]
+PathChanged=/srv/projects/brai-new/graphify-out/graph.json
+Unit=brai-graphify-render.service
+
+[Install]
+WantedBy=multi-user.target

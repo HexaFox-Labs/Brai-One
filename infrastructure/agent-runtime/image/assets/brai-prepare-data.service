@@ -1,0 +1,15 @@
+[Unit]
+Description=Prepare the single quota-bound Brai user data tree
+RequiresMountsFor=/data
+Before=user@1000.service
+
+[Service]
+Type=oneshot
+User=brai
+Group=brai
+UMask=0077
+ExecStart=/usr/libexec/brai/prepare-data
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

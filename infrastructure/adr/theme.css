@@ -1,0 +1,94 @@
+/* Brai New ADR knowledge base theme. Log4brains renders a light Material UI
+ * theme into its static pages, so these overrides intentionally win over that
+ * generated output without modifying any vendor files. */
+:root {
+  color-scheme: dark;
+  --brai-bg: #090a0c;
+  --brai-surface: #111318;
+  --brai-surface-raised: #171a20;
+  --brai-border: #2b3039;
+  --brai-text: #f4f5f7;
+  --brai-muted: #a6adba;
+  --brai-accent: #ff4d4f;
+  --brai-accent-soft: #ff8182;
+}
+
+html,
+body,
+#__next {
+  min-height: 100%;
+  background: var(--brai-bg) !important;
+  color: var(--brai-text) !important;
+}
+body,
+.MuiTypography-root,
+.MuiButtonBase-root,
+.MuiInputBase-root {
+  color: var(--brai-text) !important;
+}
+.MuiPaper-root,
+.MuiDrawer-paper,
+.MuiAppBar-root,
+.MuiMenu-paper,
+.MuiPopover-paper {
+  background-color: var(--brai-surface) !important;
+  color: var(--brai-text) !important;
+}
+.MuiAppBar-root {
+  border-bottom: 1px solid var(--brai-border) !important;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 5%) !important;
+}
+.MuiDrawer-paper {
+  border-right: 1px solid var(--brai-border) !important;
+}
+a,
+.MuiLink-root,
+.MuiTypography-colorPrimary,
+.MuiButton-textPrimary {
+  color: var(--brai-accent-soft) !important;
+}
+a:hover,
+a:focus-visible,
+.MuiButtonBase-root:hover,
+.MuiButtonBase-root:focus-visible {
+  color: var(--brai-accent) !important;
+}
+.MuiDivider-root,
+.MuiTimelineConnector-root {
+  background-color: var(--brai-border) !important;
+}
+.MuiTimelineDot-defaultGrey,
+.MuiChip-outlined {
+  border-color: var(--brai-border) !important;
+  color: var(--brai-muted) !important;
+}
+.MuiTimelineDot-defaultGrey {
+  background-color: var(--brai-surface-raised) !important;
+}
+.MuiChip-outlined {
+  background-color: rgb(255 255 255 / 3%) !important;
+}
+blockquote {
+  color: var(--brai-muted) !important;
+  border-left-color: var(--brai-accent) !important;
+}
+pre,
+code {
+  background: var(--brai-surface-raised) !important;
+  color: var(--brai-text) !important;
+}
+table,
+th,
+td {
+  border-color: var(--brai-border) !important;
+}
+th {
+  background: var(--brai-surface-raised) !important;
+}
+.MuiBackdrop-root {
+  background-color: rgb(0 0 0 / 65%) !important;
+}
+::selection {
+  background: rgb(255 77 79 / 35%);
+  color: #fff;
+}

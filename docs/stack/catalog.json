@@ -1,0 +1,1847 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "tools/stack/catalog.json",
+  "scope": "Brai New и инструменты его инженерного workflow",
+  "categories": [
+    {
+      "id": "runtime",
+      "title": "Runtime и сборка",
+      "description": "Базовые среды, package manager и task graph, на которых собирается Brai New.",
+      "tools": ["lerna", "nodejs", "nx", "pnpm", "tsx", "typescript"]
+    },
+    {
+      "id": "application",
+      "title": "Прикладной стек",
+      "description": "Фреймворки и библиотеки, из которых состоят web, Gateway и messaging boundaries.",
+      "tools": [
+        "class-names-tools",
+        "fastify",
+        "geist",
+        "jose",
+        "lucide-react",
+        "nats",
+        "nextjs",
+        "pino",
+        "radix-ui",
+        "react",
+        "tailwind-css",
+        "zod"
+      ]
+    },
+    {
+      "id": "infrastructure",
+      "title": "Инфраструктура",
+      "description": "Компоненты, которые запускают, защищают и обслуживают runtime Brai New.",
+      "tools": ["caddy", "docker-compose", "nginx", "supabase-postgresql"]
+    },
+    {
+      "id": "data",
+      "title": "Работа с данными",
+      "description": "Клиенты и хранилища, через которые сервисы владеют своими данными.",
+      "tools": ["postgres-client"]
+    },
+    {
+      "id": "quality",
+      "title": "Качество",
+      "description": "Проверки, форматирование и тестовые инструменты, удерживающие проект в рабочем состоянии.",
+      "tools": [
+        "eslint",
+        "jsdom",
+        "playwright",
+        "prettier",
+        "testing-library",
+        "vitest"
+      ]
+    },
+    {
+      "id": "documentation",
+      "title": "Документация",
+      "description": "Инструменты, которые помогают фиксировать требования, решения и рабочий контекст.",
+      "tools": ["log4brains", "memory-bank", "openspec"]
+    },
+    {
+      "id": "developer-experience",
+      "title": "Рабочая среда агента",
+      "description": "Инструменты, которые делают повседневную инженерную работу агента быстрее и понятнее.",
+      "tools": ["rtk"]
+    },
+    {
+      "id": "browser",
+      "title": "Браузер и визуальная проверка",
+      "description": "Изолированные браузерные и diagramming-инструменты для проверки опубликованного результата.",
+      "tools": ["agent-browser", "chrome-devtools", "kroki"]
+    }
+  ],
+  "tools": [
+    {
+      "id": "agent-browser",
+      "name": "agent-browser",
+      "category": "browser",
+      "kind": "browser-automation",
+      "scope": "agent-environment",
+      "summary": "Быстрый браузерный просмотр и простые действия без DevTools-level диагностики.",
+      "whatItIs": "agent-browser — CLI для навигации и действий в изолированном браузере.",
+      "purpose": "Помогает быстро посмотреть rendered page, выполнить простое действие или собрать информацию.",
+      "usage": "Перед применением загружается matching browser workflow; runtime/cache живёт под `/srv/opt/agent-browser`.",
+      "status": "installed",
+      "version": "host-managed",
+      "location": "Команда `/home/mark/.local/bin/agent-browser`.",
+      "limitations": "Для console/network/performance QA опубликованного protected URL используется Chrome DevTools MCP.",
+      "sources": [
+        {
+          "label": "Infrastructure stack",
+          "path": "docs/stack/infrastructure-and-operations.md"
+        },
+        {
+          "label": "Host registry",
+          "path": "/home/mark/DEPLOYMENT.md"
+        }
+      ],
+      "verification": ["`agent-browser --help`", "Isolated page inspection"],
+      "tags": ["qa", "scraping", "browser"],
+      "details": {
+        "whatItIsDetailed": "agent-browser — это CLI для быстрой навигации, простых действий и просмотра уже отрисованной web-страницы. Он удобен как лёгкий lookup-инструмент, но не заменяет DevTools-level диагностику с network, console и performance evidence.",
+        "whyNeededDetailed": "Агенту часто нужно быстро открыть документацию или проверить видимый результат без тяжёлого trace. agent-browser сокращает путь для таких задач, а разделение с Chrome DevTools сохраняет правильный уровень строгости для protected preview и release QA.",
+        "whyThisTool": "Быстрый просмотр и простые действия не всегда требуют тяжёлого DevTools-level trace.",
+        "howItWorksHere": "CLI работает в отдельном browser runtime/cache и выполняет разрешённые navigation/action workflows.",
+        "capabilities": [
+          "быстрая навигация",
+          "простые клики и ввод",
+          "rendered-page inspection"
+        ],
+        "scenarios": [
+          "посмотреть страницу по URL",
+          "собрать видимый текст",
+          "выполнить короткий незащищённый lookup workflow"
+        ],
+        "commonMistakes": [
+          "использовать его вместо обязательного DevTools QA protected URL",
+          "подключить личные cookies или profile"
+        ],
+        "relatedTools": ["chrome-devtools", "playwright", "kroki"]
+      },
+      "page": "tools/agent-browser.md"
+    },
+    {
+      "id": "caddy",
+      "name": "Caddy",
+      "category": "infrastructure",
+      "kind": "ingress",
+      "scope": "host",
+      "summary": "Единая внешняя точка входа с TLS, redirect, Basic Auth и маршрутизацией.",
+      "whatItIs": "Caddy — web server и reverse proxy с автоматическим TLS.",
+      "purpose": "Оставляет application ports за localhost и защищает технические subdomains общей политикой.",
+      "usage": "Caddy принимает 80/443, направляет web и `/api/*` в нужные loopback services.",
+      "status": "installed",
+      "version": "host-managed",
+      "location": "`infrastructure/caddy` и host Caddy configuration.",
+      "limitations": "Нельзя обходить Caddy и публиковать application ports наружу.",
+      "sources": [
+        {
+          "label": "Caddy README",
+          "path": "infrastructure/caddy/README.md"
+        },
+        {
+          "label": "Ingress config",
+          "path": "infrastructure/caddy/factory.caddy"
+        }
+      ],
+      "verification": [
+        "Caddy config validation",
+        "Authenticated HTTPS smoke test"
+      ],
+      "tags": ["tls", "proxy", "auth"],
+      "details": {
+        "whatItIsDetailed": "Caddy — это reverse proxy и ingress, который принимает внешний HTTP/HTTPS-трафик, управляет TLS и направляет запросы к внутренним сервисам. Он также может применить redirect, Basic Auth и правила маршрутизации до того, как запрос попадёт в application container.",
+        "whyNeededDetailed": "Brai нужен один контролируемый вход на 80/443 вместо публичного набора портов для каждого сервиса. Caddy централизует TLS и protected subdomains, оставляет Gateway и web на loopback и помогает одинаково проверять public и technical surfaces.",
+        "whyThisTool": "Один ingress позволяет централизовать TLS, redirect, Basic Auth и правила public/private surface.",
+        "howItWorksHere": "Caddy принимает 80/443 и направляет web и `/api/*` на loopback services, не раскрывая application ports.",
+        "capabilities": [
+          "automatic TLS и HTTP-to-HTTPS redirect",
+          "reverse proxy routing",
+          "unified Basic Auth для protected technical subdomains"
+        ],
+        "scenarios": [
+          "опубликовать Factory route",
+          "проверить authenticated HTTPS smoke",
+          "атомарно добавить или откатить Caddy route"
+        ],
+        "commonMistakes": [
+          "обойти Caddy прямым backend port",
+          "перенести пароль Basic Auth в repository docs"
+        ],
+        "relatedTools": ["docker-compose", "nginx", "chrome-devtools"]
+      },
+      "page": "tools/caddy.md"
+    },
+    {
+      "id": "chrome-devtools",
+      "name": "Chrome DevTools MCP",
+      "category": "browser",
+      "kind": "browser-qa",
+      "scope": "agent-environment",
+      "summary": "Основной инструмент глубокой QA-проверки опубликованных защищённых URL.",
+      "whatItIs": "Chrome DevTools MCP — изолированная headless Chrome-сессия с DOM, console, network и viewport inspection.",
+      "purpose": "Проверяет реальный HTTPS route, Caddy Auth, application login и отсутствие UI/runtime ошибок.",
+      "usage": "Используется только с isolated profile; protected URL проходит Caddy Auth до app login.",
+      "status": "installed",
+      "version": "host-managed",
+      "location": "`infrastructure/chrome-devtools` и Codex MCP server `chrome-devtools`.",
+      "limitations": "Нельзя подключать личный Chrome profile или обходить Caddy через backend port.",
+      "sources": [
+        {
+          "label": "Project browser setup",
+          "path": "infrastructure/chrome-devtools/README.md"
+        },
+        {
+          "label": "Infrastructure stack",
+          "path": "docs/stack/infrastructure-and-operations.md"
+        }
+      ],
+      "verification": [
+        "Desktop/mobile DOM snapshot",
+        "Console and network inspection"
+      ],
+      "tags": ["qa", "browser", "security"],
+      "details": {
+        "whatItIsDetailed": "Chrome DevTools MCP — это изолированный browser-debugging инструмент для DOM/a11y snapshots, console, network, performance и viewport inspection. Он работает с отдельным headless-профилем и позволяет проверить опубликованную страницу теми же сигналами, которыми пользуется разработчик в DevTools.",
+        "whyNeededDetailed": "Protected Brai URL нельзя считать проверенным по локальному серверу или одному curl: важны Caddy Auth, app login, console errors и сетевые сбои в реальном HTTPS. Этот инструмент даёт воспроизводимое evidence для desktop/mobile QA и не требует доступа к личному Chrome-профилю.",
+        "whyThisTool": "Для protected preview/dev URL недостаточно локального smoke: нужно проверить реальный HTTPS, Caddy Auth, console и network.",
+        "howItWorksHere": "Изолированный headless Chrome проходит Caddy Basic Auth, затем app login, после чего снимает DOM/a11y, console и network evidence.",
+        "capabilities": [
+          "DOM и accessibility snapshots",
+          "console/network inspection",
+          "desktop/mobile viewport QA"
+        ],
+        "scenarios": [
+          "проверить published Factory route",
+          "найти 404 или console error после deploy",
+          "подтвердить отсутствие mobile overflow"
+        ],
+        "commonMistakes": [
+          "подключить личный Chrome profile",
+          "обойти Caddy и считать backend curl эквивалентом QA"
+        ],
+        "relatedTools": ["caddy", "playwright", "agent-browser"]
+      },
+      "page": "tools/chrome-devtools.md"
+    },
+    {
+      "id": "class-names-tools",
+      "name": "clsx / tailwind-merge / class-variance-authority",
+      "category": "application",
+      "kind": "ui-utility",
+      "scope": "project",
+      "summary": "Малые утилиты для class names и вариантов UI-компонентов.",
+      "whatItIs": "Набор библиотек, который объединяет условные классы, Tailwind classes и component variants.",
+      "purpose": "Снижает повторение и конфликт классов в composable web components.",
+      "usage": "Утилиты используются в `apps/web` UI layer.",
+      "status": "active",
+      "version": "clsx 2.1.1; tailwind-merge 3.6.0; CVA 0.7.1",
+      "location": "`apps/web`.",
+      "limitations": "Не выносить случайные бизнес-правила в class-name helpers.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        }
+      ],
+      "verification": ["React component tests", "`pnpm --dir apps/web lint`"],
+      "tags": ["ui", "css"],
+      "details": {
+        "whatItIsDetailed": "clsx, tailwind-merge и class-variance-authority — небольшие helpers для сборки className и описания вариантов компонентов. Они решают механику условных и конфликтующих CSS-классов, а не принимают бизнес-решения и не заменяют компонентную архитектуру.",
+        "whyNeededDetailed": "В Brai один control часто имеет loading, disabled, error, size и visual variants одновременно. Эти helpers удерживают className-логику короткой и предсказуемой, уменьшая случайные Tailwind-конфликты, но границы поведения должны оставаться видимыми в React-компоненте.",
+        "whyThisTool": "UI-компоненты имеют много условных состояний; маленькие class-name helpers держат эти правила короткими.",
+        "howItWorksHere": "clsx объединяет условия, tailwind-merge разрешает конфликты utility-классов, CVA описывает варианты компонентов.",
+        "capabilities": [
+          "условные class names",
+          "безопасное объединение Tailwind utilities",
+          "типизированные component variants"
+        ],
+        "scenarios": [
+          "собрать button variants",
+          "показать error/disabled state",
+          "объединить className от consumer и primitive"
+        ],
+        "commonMistakes": [
+          "прятать business logic в class helper",
+          "добавлять конфликтующие utility classes вместо явного variant"
+        ],
+        "relatedTools": ["tailwind-css", "radix-ui", "react"]
+      },
+      "page": "tools/class-names-tools.md"
+    },
+    {
+      "id": "docker-compose",
+      "name": "Docker Compose",
+      "category": "infrastructure",
+      "kind": "runtime-orchestration",
+      "scope": "project",
+      "summary": "Описывает локальный и production-like runtime Brai New как набор сервисов.",
+      "whatItIs": "Docker Compose — декларативный формат запуска связанных контейнеров.",
+      "purpose": "Собирает web, Gateway, NATS и domain services с проверяемыми сетями и healthchecks.",
+      "usage": "Compose запускается с корневым `compose.yml`; наружу привязаны только нужные loopback endpoints.",
+      "status": "active",
+      "version": "Compose v2",
+      "location": "`compose.yml`, `infrastructure/docker` и production compose config.",
+      "limitations": "Приложения не публикуют внешние порты напрямую.",
+      "sources": [
+        {
+          "label": "Compose file",
+          "path": "compose.yml"
+        },
+        {
+          "label": "Docker README",
+          "path": "infrastructure/docker/README.md"
+        }
+      ],
+      "verification": ["`pnpm run compose:config`", "`docker compose ps`"],
+      "tags": ["containers", "runtime"],
+      "details": {
+        "whatItIsDetailed": "Docker Compose — это декларативное описание набора контейнеров, их сетей, volumes, environment и healthchecks. Он превращает несколько отдельных процессов Brai в видимый service graph, который можно поднять и проверить как единое окружение.",
+        "whyNeededDetailed": "Для Brai важно видеть не только код, но и реальные связи web, Gateway, NATS, PostgreSQL и доменных сервисов. Compose делает эти связи повторяемыми для local/protected runtime, позволяет проверить readiness и удерживает внутренние порты за loopback и Caddy.",
+        "whyThisTool": "Compose даёт видимую модель сервисов, сетей, volumes и healthchecks для локального и protected runtime.",
+        "howItWorksHere": "Корневой compose связывает web, Gateway, NATS и доменные сервисы; application ports привязаны к loopback.",
+        "capabilities": [
+          "декларативный service graph",
+          "isolated networks и persistent volumes",
+          "healthchecks и restart policy"
+        ],
+        "scenarios": [
+          "поднять Factory vertical slice локально",
+          "проверить итоговую compose config",
+          "перезапустить один сервис и наблюдать readiness"
+        ],
+        "commonMistakes": [
+          "запустить production workflow из live checkout",
+          "публиковать внутренний NATS или database port"
+        ],
+        "relatedTools": ["caddy", "nats", "nginx", "supabase-postgresql"]
+      },
+      "page": "tools/docker-compose.md"
+    },
+    {
+      "id": "eslint",
+      "name": "ESLint",
+      "category": "quality",
+      "kind": "static-analysis",
+      "scope": "project",
+      "summary": "Проверяет исходный код на ошибки и поддерживаемость.",
+      "whatItIs": "ESLint — расширяемый статический анализатор JavaScript и TypeScript.",
+      "purpose": "Ловит ошибки, которые форматтер не видит, и удерживает единые правила кода.",
+      "usage": "Единый flat config применяется через Nx lint targets.",
+      "status": "active",
+      "version": "9.39.4",
+      "location": "`eslint.config.mjs` и project lint targets.",
+      "limitations": "ESLint не заменяет TypeScript и тесты.",
+      "sources": [
+        {
+          "label": "ESLint config",
+          "path": "eslint.config.mjs"
+        },
+        {
+          "label": "Code style",
+          "path": "docs/reference/code-style.md"
+        }
+      ],
+      "verification": ["`pnpm run lint`"],
+      "tags": ["lint", "typescript"],
+      "details": {
+        "whatItIsDetailed": "ESLint — это статический анализатор JavaScript и TypeScript, который проверяет структуру кода, опасные паттерны, imports и project-specific правила. Он может подсветить проблему без запуска приложения, но не является runtime debugger или formatter.",
+        "whyNeededDetailed": "В большом workspace ошибки в импорте, API и соглашениях иначе обнаруживаются только во время сборки или review. ESLint даёт ранний fail-fast сигнал для web, сервисов, пакетов и tooling и не позволяет локальному исключению незаметно стать общим стандартом.",
+        "whyThisTool": "Форматирование исправляет форму кода, но ESLint ловит ошибки использования API и поддерживаемости.",
+        "howItWorksHere": "Flat config запускается Nx targets для приложений, сервисов, пакетов и tooling.",
+        "capabilities": [
+          "статический анализ JavaScript/TypeScript",
+          "проверка project-specific rules",
+          "fail-fast lint в CI"
+        ],
+        "scenarios": [
+          "проверить новый Gateway handler",
+          "найти неиспользуемый import",
+          "проверить generated или test code перед handoff"
+        ],
+        "commonMistakes": [
+          "использовать eslint-disable без узкой причины",
+          "ожидать от ESLint исправления runtime bug"
+        ],
+        "relatedTools": ["prettier", "typescript", "nx"]
+      },
+      "page": "tools/eslint.md"
+    },
+    {
+      "id": "fastify",
+      "name": "Fastify",
+      "category": "application",
+      "kind": "http-framework",
+      "scope": "project",
+      "summary": "Единственный HTTP edge для Gateway Brai New.",
+      "whatItIs": "Fastify — производительный Node.js framework для HTTP-сервисов.",
+      "purpose": "Принимает browser requests, валидирует их и переводит разрешённые операции в NATS.",
+      "usage": "Fastify работает в `apps/api-gateway`; отдельные доменные сервисы не получают public HTTP surface.",
+      "status": "active",
+      "version": "5.10.0",
+      "location": "`apps/api-gateway`.",
+      "limitations": "Gateway не владеет прикладной базой и не вызывает сервисы по HTTP.",
+      "sources": [
+        {
+          "label": "Gateway manifest",
+          "path": "apps/api-gateway/package.json"
+        },
+        {
+          "label": "Topology reference",
+          "path": "docs/reference/microservice-topology.md"
+        }
+      ],
+      "verification": ["Gateway integration tests", "`pnpm run typecheck`"],
+      "tags": ["api", "http"],
+      "details": {
+        "whatItIsDetailed": "Fastify — это Node.js web framework для HTTP-сервисов с routing, lifecycle hooks и плагинной моделью. В Brai он используется как лёгкий edge framework: принимает HTTP, выполняет boundary-проверки и передаёт разрешённые операции дальше.",
+        "whyNeededDetailed": "Gateway должен быть тонким и предсказуемым входом, а не местом хранения доменных данных или прямых database connections. Fastify даёт быстрый request lifecycle, явные ответы и расширяемые hooks, сохраняя service-owned архитектуру и NATS как межсервисный транспорт.",
+        "whyThisTool": "Gateway нужен лёгкий и явный HTTP edge, который не смешивает transport boundary с владением доменными данными.",
+        "howItWorksHere": "Fastify принимает HTTP, запускает validation/auth hooks и публикует разрешённые NATS request/reply subjects.",
+        "capabilities": [
+          "HTTP routing и lifecycle hooks",
+          "проверка request/response",
+          "структурированные readiness/error responses"
+        ],
+        "scenarios": [
+          "добавить browser-facing endpoint",
+          "проверить idempotency и auth boundary",
+          "вернуть 503 при недоступном NATS"
+        ],
+        "commonMistakes": [
+          "подключить базу к Gateway",
+          "добавить прямой HTTP-вызов между domain services"
+        ],
+        "relatedTools": ["zod", "nats", "jose", "pino"]
+      },
+      "page": "tools/fastify.md"
+    },
+    {
+      "id": "geist",
+      "name": "Geist",
+      "category": "application",
+      "kind": "font-assets",
+      "scope": "project",
+      "summary": "Шрифтовые assets для типографики Brai New.",
+      "whatItIs": "Geist — набор шрифтовых ресурсов, подключаемых к web UI.",
+      "purpose": "Поддерживает читаемую и согласованную типографику интерфейса.",
+      "usage": "Assets подключаются в `apps/web` layout и static output.",
+      "status": "active",
+      "version": "1.7.2",
+      "location": "`apps/web`.",
+      "limitations": "Шрифты не должны зависеть от внешней загрузки для базового layout.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        },
+        {
+          "label": "Web layout",
+          "path": "apps/web/src/app/layout.tsx"
+        }
+      ],
+      "verification": ["Web production build", "Mobile visual QA"],
+      "tags": ["ui", "typography"],
+      "details": {
+        "whatItIsDetailed": "Geist — это набор UI- и mono-шрифтов, используемых для согласованной типографики интерфейса и технических значений. Он задаёт форму текста, но не отвечает за layout, содержание страницы или доступность контента.",
+        "whyNeededDetailed": "На страницах Brai много длинных объяснений, версий и команд, поэтому читаемость и различение prose/technical values влияют на понимание. Локально подключённая типографика уменьшает зависимость от внешнего CDN и сохраняет одинаковый вид при static export.",
+        "whyThisTool": "Согласованная типографика влияет на читаемость длинных stack pages и плотность интерфейса.",
+        "howItWorksHere": "Font assets подключаются через web layout и попадают в static output без обязательного runtime fetch.",
+        "capabilities": [
+          "UI sans typography",
+          "monospace typography для технических значений",
+          "локальный static asset delivery"
+        ],
+        "scenarios": [
+          "оформить title и body copy",
+          "показать command/version в monospace",
+          "проверить читаемость на mobile"
+        ],
+        "commonMistakes": [
+          "зависеть от внешнего font CDN для базового layout",
+          "использовать monospace для обычного prose"
+        ],
+        "relatedTools": ["nextjs", "tailwind-css", "nginx"]
+      },
+      "page": "tools/geist.md"
+    },
+    {
+      "id": "jose",
+      "name": "JOSE",
+      "category": "application",
+      "kind": "security-library",
+      "scope": "project",
+      "summary": "Работа с JWT и подписанными структурами на Gateway boundary.",
+      "whatItIs": "JOSE — JavaScript implementation of JSON Object Signing and Encryption primitives.",
+      "purpose": "Помогает безопасно проверять и создавать подписанные данные там, где это предусмотрено контрактом.",
+      "usage": "Используется в `apps/api-gateway` для JWT-related operations.",
+      "status": "active",
+      "version": "6.2.3",
+      "location": "Gateway package.",
+      "limitations": "Ключи и секретные значения не попадают в manifest или generated docs.",
+      "sources": [
+        {
+          "label": "Gateway manifest",
+          "path": "apps/api-gateway/package.json"
+        }
+      ],
+      "verification": ["Gateway auth tests", "`pnpm run typecheck`"],
+      "tags": ["jwt", "security"],
+      "details": {
+        "whatItIsDetailed": "JOSE — это реализация стандартных форматов и операций для подписанных структур, включая JWT/JWS-подобные сценарии. Библиотека выполняет криптографические primitives и проверку подписи, но не решает за приложение, какие claims и permissions нужны.",
+        "whyNeededDetailed": "Gateway должен проверять входящий signed token стандартным способом, не изобретая собственную криптографию и не доверяя claims до проверки подписи и срока. JOSE помогает выполнить эту проверку на boundary, пока ключи и секретный material остаются в защищённой runtime configuration.",
+        "whyThisTool": "Gateway должен явно работать с подписанными структурами, не реализуя криптографические primitives самостоятельно.",
+        "howItWorksHere": "JOSE используется на Gateway auth boundary; ключевой material приходит из защищённой runtime configuration и не попадает в docs.",
+        "capabilities": [
+          "JWT verification",
+          "JWS/JWE-compatible signed structures",
+          "стандартизированные crypto helpers"
+        ],
+        "scenarios": [
+          "проверить входящий JWT",
+          "извлечь claims после валидации",
+          "отвергнуть неподписанный или просроченный token"
+        ],
+        "commonMistakes": [
+          "логировать token целиком",
+          "принимать claims без проверки подписи и срока действия"
+        ],
+        "relatedTools": ["fastify", "zod", "pino"]
+      },
+      "page": "tools/jose.md"
+    },
+    {
+      "id": "jsdom",
+      "name": "jsdom",
+      "category": "quality",
+      "kind": "test-environment",
+      "scope": "project",
+      "summary": "Browser-like DOM environment для Vitest component tests.",
+      "whatItIs": "jsdom — реализация браузерных DOM API для Node.js тестового процесса.",
+      "purpose": "Даёт компонентам предсказуемый DOM без запуска полноценного браузера.",
+      "usage": "Используется как environment для web Vitest tests.",
+      "status": "active",
+      "version": "29.1.1",
+      "location": "`apps/web`.",
+      "limitations": "jsdom не является доказательством поведения настоящего Chromium.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        },
+        {
+          "label": "Vitest config",
+          "path": "apps/web/vitest.config.ts"
+        }
+      ],
+      "verification": ["`pnpm --dir apps/web test`"],
+      "tags": ["tests", "dom"],
+      "details": {
+        "whatItIsDetailed": "jsdom — это реализация базовых DOM и browser-like API внутри Node test process. Она позволяет React-компоненту получить document, window и события без запуска полноценного Chromium, но не моделирует настоящий layout, rendering engine и все browser quirks.",
+        "whyNeededDetailed": "Большинство component tests Brai должны быть быстрыми и изолированными, а для них достаточно DOM environment. jsdom даёт этот слой для Vitest, тогда как layout, network, Caddy и реальный browser workflow остаются задачами Playwright или Chrome DevTools.",
+        "whyThisTool": "Большинство component tests не требуют полноценного Chromium, но им нужен DOM и базовые browser APIs.",
+        "howItWorksHere": "Vitest поднимает jsdom environment внутри Node process; настоящая browser behavior проверяется отдельно Playwright.",
+        "capabilities": [
+          "DOM APIs в Node test process",
+          "быстрый component environment",
+          "изоляция document/window между тестами"
+        ],
+        "scenarios": [
+          "отрендерить React component",
+          "проверить DOM event",
+          "протестировать label, focus и form state"
+        ],
+        "commonMistakes": [
+          "считать jsdom полноценным браузером",
+          "добавлять тесты на layout, который jsdom не вычисляет"
+        ],
+        "relatedTools": ["vitest", "testing-library", "playwright"]
+      },
+      "page": "tools/jsdom.md"
+    },
+    {
+      "id": "kroki",
+      "name": "Kroki",
+      "category": "browser",
+      "kind": "diagram-renderer",
+      "scope": "host",
+      "summary": "Локально рендерит текстовые диаграммы в SVG и другие форматы.",
+      "whatItIs": "Kroki — HTTP renderer для Mermaid, PlantUML, GraphViz и других diagram DSL.",
+      "purpose": "Позволяет получать проверяемые архитектурные схемы без внешнего публичного сервиса.",
+      "usage": "Локальный endpoint доступен на `http://127.0.0.1:8000`; по умолчанию выбирается SVG.",
+      "status": "installed",
+      "version": "host-managed",
+      "location": "Local service `http://127.0.0.1:8000` на сети `bright-net`.",
+      "limitations": "Kroki не является runtime-зависимостью Brai и не должен открываться наружу.",
+      "sources": [
+        {
+          "label": "Workspace rules",
+          "path": "AGENTS.md"
+        },
+        {
+          "label": "Host registry",
+          "path": "/home/mark/DEPLOYMENT.md"
+        }
+      ],
+      "verification": ["Local renderer health check", "SVG diagram render"],
+      "tags": ["diagrams", "svg", "architecture"],
+      "details": {
+        "whatItIsDetailed": "Kroki — это локальный renderer текстовых диаграмм: Mermaid, PlantUML, GraphViz и других форматов. Он принимает описание схемы и превращает его в SVG или другой графический результат, сохраняя source как обычный текст.",
+        "whyNeededDetailed": "Архитектурные границы Brai легче обсуждать по схеме, но ручные картинки быстро устаревают. Локальный Kroki позволяет регенерировать диаграмму из source рядом с документацией, не открывая новый public service и не привязываясь к внешнему renderer.",
+        "whyThisTool": "Архитектурные связи легче проверять как диаграмму, а локальный renderer не требует внешнего public service.",
+        "howItWorksHere": "Kroki принимает текстовый diagram source на loopback endpoint и отдаёт SVG или другой выбранный формат.",
+        "capabilities": [
+          "Mermaid, PlantUML и GraphViz rendering",
+          "воспроизводимый SVG output",
+          "локальная работа без public port"
+        ],
+        "scenarios": [
+          "нарисовать topology flow",
+          "экспортировать Mermaid в SVG",
+          "обновить архитектурную схему после изменения boundary"
+        ],
+        "commonMistakes": [
+          "публиковать локальный endpoint наружу",
+          "рисовать схему, которая расходится с code/config source"
+        ],
+        "relatedTools": ["chrome-devtools", "caddy", "openspec"]
+      },
+      "page": "tools/kroki.md"
+    },
+    {
+      "id": "lerna",
+      "name": "Lerna",
+      "category": "runtime",
+      "kind": "workspace-tool",
+      "scope": "project",
+      "summary": "Workspace/release-обвязка поверх общего package-based монорепозитория.",
+      "whatItIs": "Lerna — инструмент управления пакетами в монорепозитории.",
+      "purpose": "Сохраняет совместимую workspace-модель, не забирая у Nx исполнение задач.",
+      "usage": "Lerna описан в `lerna.json`, а build/test/lint/typecheck выполняет Nx.",
+      "status": "active",
+      "version": "9.0.7",
+      "location": "Корневой `lerna.json`.",
+      "limitations": "Не добавлять второй независимый task runner для тех же целей.",
+      "sources": [
+        {
+          "label": "Lerna config",
+          "path": "lerna.json"
+        },
+        {
+          "label": "Package manifest",
+          "path": "package.json"
+        }
+      ],
+      "verification": ["`pnpm exec lerna --version`"],
+      "tags": ["monorepo"],
+      "details": {
+        "whatItIsDetailed": "Lerna — это инструмент для package-based monorepo, который знает о пакетах workspace и поддерживает операции их версионирования и release-подготовки. В текущем проекте это не основной task runner, а совместимая оболочка вокруг package graph.",
+        "whyNeededDetailed": "Brai сохраняет Lerna-модель, чтобы структура пакетов и будущий release workflow оставались понятными и совместимыми. Исполнение build, lint и test передано Nx, поэтому команды не дублируют друг друга и не создают два конкурирующих графа.",
+        "whyThisTool": "Lerna сохраняет привычную workspace/release-модель, пока исполнение задач централизовано в Nx.",
+        "howItWorksHere": "Lerna описывает package-based workspace, но не конкурирует с Nx за запуск build, lint и tests.",
+        "capabilities": [
+          "управление пакетной workspace-моделью",
+          "подготовка к будущему versioning/release",
+          "совместимость package-based monorepo"
+        ],
+        "scenarios": [
+          "добавить новый workspace package",
+          "проверить package graph",
+          "подготовить будущую публикацию без смены task runner"
+        ],
+        "commonMistakes": [
+          "запускать Lerna как второй CI task graph",
+          "смешивать release policy с текущими runtime contracts"
+        ],
+        "relatedTools": ["nx", "pnpm", "nodejs"]
+      },
+      "page": "tools/lerna.md"
+    },
+    {
+      "id": "log4brains",
+      "name": "Log4brains",
+      "category": "documentation",
+      "kind": "adr-catalog",
+      "scope": "project",
+      "summary": "Собирает ADR в searchable static catalog для архитектурных решений.",
+      "whatItIs": "Log4brains — docs-as-code инструмент для Architecture Decision Records.",
+      "purpose": "Показывает, почему Brai выбрал конкретные архитектурные решения и компромиссы.",
+      "usage": "ADR source лежит в `docs/decisions`, сборка и publication идут project scripts.",
+      "status": "active",
+      "version": "1.1.0",
+      "location": "`.log4brains.yml`, `docs/decisions` и `infrastructure/adr`.",
+      "limitations": "ADR не является нормативным OpenSpec и не должен подменять requirements.",
+      "sources": [
+        {
+          "label": "Log4brains config",
+          "path": ".log4brains.yml"
+        },
+        {
+          "label": "ADR README",
+          "path": "infrastructure/adr/README.md"
+        }
+      ],
+      "verification": ["`pnpm run adr:check`", "`pnpm run adr:build`"],
+      "tags": ["adr", "static-site"],
+      "details": {
+        "whatItIsDetailed": "Log4brains — это инструмент каталога архитектурных решений (ADR), который собирает Markdown-записи в searchable static site. Он хранит не текущий API-контракт, а объяснение причин, альтернатив и последствий долговечных решений.",
+        "whyNeededDetailed": "Некоторые решения Brai нельзя понять по коду: почему выбран NATS, где проходит access boundary или зачем нужен immutable artifact. ADR-каталог сохраняет эту rationale-историю отдельно от OpenSpec и помогает будущему агенту не вернуть уже отвергнутую альтернативу.",
+        "whyThisTool": "Архитектурные решения требуют объяснения причин и альтернатив, чего недостаточно в требованиях или текущей docs.",
+        "howItWorksHere": "Log4brains строит static ADR catalog из `docs/decisions`, а watcher публикует только после checks.",
+        "capabilities": [
+          "ADR source catalog",
+          "поиск и static HTML build",
+          "проверяемая rationale history"
+        ],
+        "scenarios": [
+          "зафиксировать новый durable architectural choice",
+          "найти альтернативы решения",
+          "проверить опубликованный ADR site"
+        ],
+        "commonMistakes": [
+          "использовать ADR как замену OpenSpec requirement",
+          "обновлять rationale молча без ссылки на решение"
+        ],
+        "relatedTools": ["openspec", "memory-bank", "caddy"]
+      },
+      "page": "tools/log4brains.md"
+    },
+    {
+      "id": "lucide-react",
+      "name": "lucide-react",
+      "category": "application",
+      "kind": "icon-library",
+      "scope": "project",
+      "summary": "Единый набор SVG-иконок для web-интерфейса.",
+      "whatItIs": "lucide-react — React-компоненты открытого набора Lucide icons.",
+      "purpose": "Сохраняет единый визуальный язык и не требует локальных растровых копий для обычных иконок.",
+      "usage": "Иконки импортируются в web components и подстраиваются под currentColor.",
+      "status": "active",
+      "version": "1.21.0",
+      "location": "`apps/web`.",
+      "limitations": "Brand assets и логотипы не заменяются случайной generic-иконкой.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        }
+      ],
+      "verification": ["`pnpm --dir apps/web test`", "Visual browser QA"],
+      "tags": ["ui", "icons"],
+      "details": {
+        "whatItIsDetailed": "lucide-react — это библиотека SVG-иконок, экспортируемых как React components с единым outline-языком. Размер, цвет и stroke наследуются через props и CSS, поэтому иконка остаётся частью композиции интерфейса, а не отдельной картинкой.",
+        "whyNeededDetailed": "Единые иконки помогают Brai одинаково обозначать navigation, actions и statuses на разных страницах. Библиотека убирает разрозненные самодельные SVG, но не отменяет требования дать icon-only control понятное доступное имя.",
+        "whyThisTool": "Единый icon set делает действия и статусы узнаваемыми и не требует разрозненных SVG-копий.",
+        "howItWorksHere": "React icon components получают размер и color от родительского UI и входят в static web bundle.",
+        "capabilities": [
+          "SVG icons как React components",
+          "currentColor и size props",
+          "единый outline visual language"
+        ],
+        "scenarios": [
+          "обозначить действие в toolbar",
+          "показать статус или navigation item",
+          "добавить icon-only control с accessible label"
+        ],
+        "commonMistakes": [
+          "использовать icon без доступного имени",
+          "подменять brand logo generic icon"
+        ],
+        "relatedTools": ["react", "tailwind-css", "nextjs"]
+      },
+      "page": "tools/lucide-react.md"
+    },
+    {
+      "id": "memory-bank",
+      "name": "Memory Bank",
+      "category": "documentation",
+      "kind": "agent-context",
+      "scope": "project",
+      "summary": "Короткий проверяемый handoff-контекст для агентов проекта.",
+      "whatItIs": "Memory Bank — набор markdown-файлов с текущим контекстом, прогрессом и устойчивыми паттернами.",
+      "purpose": "Позволяет продолжать работу без превращения всей истории проекта в постоянный prompt.",
+      "usage": "В начале задачи читаются README, activeContext и progress; тематические файлы подключаются по маршруту.",
+      "status": "active",
+      "version": "project-local",
+      "location": "`memory-bank/`.",
+      "limitations": "Memory Bank не заменяет код, OpenSpec, тесты или секретное runtime state.",
+      "sources": [
+        {
+          "label": "Memory Bank README",
+          "path": "memory-bank/README.md"
+        },
+        {
+          "label": "Active context",
+          "path": "memory-bank/activeContext.md"
+        }
+      ],
+      "verification": ["Проверка ссылок `pnpm run docs:check`"],
+      "tags": ["agents", "handoff"],
+      "details": {
+        "whatItIsDetailed": "Memory Bank — это компактный набор Markdown-файлов для handoff между агентами и задачами. Он содержит порядок чтения, активный контекст, прогресс и устойчивые ссылки, но не является базой данных, runtime-зависимостью или заменой нормативным specs.",
+        "whyNeededDetailed": "Агенту нужно быстро понять, что уже сделано, какие решения действуют и где лежит следующий источник истины. Memory Bank сокращает повторное исследование и сохраняет важный контекст установки tooling, но намеренно не дублирует большие документы и секретные данные.",
+        "whyThisTool": "Агенту нужен компактный handoff, но полная история не должна постоянно занимать рабочий контекст.",
+        "howItWorksHere": "README задаёт порядок progressive disclosure, activeContext хранит текущий фокус, progress — этапы и evidence.",
+        "capabilities": [
+          "короткий текущий context",
+          "handoff между задачами",
+          "ссылки на более сильные источники истины"
+        ],
+        "scenarios": [
+          "начать задачу после другого агента",
+          "зафиксировать новый blocker",
+          "обновить durable tooling status после установки"
+        ],
+        "commonMistakes": [
+          "копировать в Memory Bank нормативные документы целиком",
+          "записывать секреты или превращать файл в commit log"
+        ],
+        "relatedTools": ["openspec", "log4brains", "rtk"]
+      },
+      "page": "tools/memory-bank.md"
+    },
+    {
+      "id": "nats",
+      "name": "NATS",
+      "category": "application",
+      "kind": "messaging",
+      "scope": "project",
+      "summary": "Приватная шина request/reply между Gateway и сервисами Brai New.",
+      "whatItIs": "NATS — лёгкая messaging-система с Core request/reply и JetStream.",
+      "purpose": "Разделяет browser-facing Gateway и владельцев доменных данных через явные subjects.",
+      "usage": "Node client и NATS Server работают с versioned subjects, ACL и отдельными service users.",
+      "status": "active",
+      "version": "client 3.4.0; server host-configured",
+      "location": "`packages/nats`, `infrastructure/nats` и Compose service `brai-nats`.",
+      "limitations": "Прямые межсервисные HTTP-вызовы и public NATS port запрещены.",
+      "sources": [
+        {
+          "label": "NATS package",
+          "path": "packages/nats/package.json"
+        },
+        {
+          "label": "NATS config",
+          "path": "infrastructure/nats/nats-server.conf"
+        },
+        {
+          "label": "Topology reference",
+          "path": "docs/reference/microservice-topology.md"
+        }
+      ],
+      "verification": [
+        "NATS integration tests",
+        "Gateway readiness NATS round-trip"
+      ],
+      "tags": ["messaging", "acl", "jetstream"],
+      "details": {
+        "whatItIsDetailed": "NATS — это message broker и transport для публикации сообщений и request/reply между процессами. Он работает через subjects, пользователей и ACL, поэтому сообщение адресуется не случайным HTTP-портом, а явно определённой capability boundary.",
+        "whyNeededDetailed": "Brai разделяет web edge и сервисы-владельцы данных и не хочет связывать их прямыми HTTP-вызовами или общей базой. NATS делает межсервисный обмен приватным, версионируемым и проверяемым, а ACL ограничивает, какой сервис может отправить или получить конкретный subject.",
+        "whyThisTool": "Приватная шина отделяет browser edge от service-owned data и делает межсервисные операции явными subjects.",
+        "howItWorksHere": "Gateway и сервисы подключаются отдельными пользователями с ACL; команды идут через versioned request/reply subjects.",
+        "capabilities": [
+          "низколатентный request/reply",
+          "JetStream storage для будущих durable flows",
+          "subject ACL и изоляция сервисов"
+        ],
+        "scenarios": [
+          "провести Activity create от web до Factory",
+          "вернуть Gateway readiness в 503 при остановке брокера",
+          "проверить сохранность данных после restart NATS"
+        ],
+        "commonMistakes": [
+          "открыть NATS host port наружу",
+          "использовать общий user или неверный subject version"
+        ],
+        "relatedTools": [
+          "fastify",
+          "zod",
+          "docker-compose",
+          "supabase-postgresql"
+        ]
+      },
+      "page": "tools/nats.md"
+    },
+    {
+      "id": "nextjs",
+      "name": "Next.js",
+      "category": "application",
+      "kind": "web-framework",
+      "scope": "project",
+      "summary": "Web-фреймворк, который собирает пользовательский интерфейс Brai New.",
+      "whatItIs": "Next.js — React-фреймворк с routing, build pipeline и static export.",
+      "purpose": "Даёт web-клиенту App Router и предсказуемую статическую выдачу через Nginx.",
+      "usage": "Web использует App Router, `output: export` и same-origin `/api/*`.",
+      "status": "active",
+      "version": "16.2.9",
+      "location": "`apps/web`.",
+      "limitations": "Web не получает NATS- или database-доступ; API идёт через Gateway.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        },
+        {
+          "label": "Web config",
+          "path": "apps/web/next.config.ts"
+        }
+      ],
+      "verification": [
+        "`pnpm --dir apps/web build`",
+        "Playwright web scenarios"
+      ],
+      "tags": ["web", "app-router"],
+      "details": {
+        "whatItIsDetailed": "Next.js — это React-фреймворк, который добавляет routing, сборку приложения, conventions для страниц и подготовку production output. Он управляет тем, как UI-компоненты превращаются в доступное браузеру приложение, а не является базой данных или межсервисным транспортом.",
+        "whyNeededDetailed": "Brai нужен единый web boundary с App Router, статической выдачей и понятным маршрутом `/api/*` через Caddy в Gateway. Next.js позволяет собрать web в воспроизводимый artifact, который можно отдавать через Nginx без отдельного публичного application runtime.",
+        "whyThisTool": "Next.js даёт Brai web routing и production build, а static export позволяет держать web runtime простым.",
+        "howItWorksHere": "`apps/web` собирает App Router в static export; браузер обращается к same-origin `/api/*`, который Caddy направляет в Gateway.",
+        "capabilities": [
+          "App Router и page composition",
+          "production build и static export",
+          "интеграция React, CSS и browser tests"
+        ],
+        "scenarios": [
+          "добавить экран Factory",
+          "проверить responsive route через Playwright",
+          "собрать статический web image для Nginx"
+        ],
+        "commonMistakes": [
+          "вызывать domain service напрямую из браузера",
+          "ожидать server-only database/NATS access в static web output"
+        ],
+        "relatedTools": ["react", "tailwind-css", "nginx", "playwright"]
+      },
+      "page": "tools/nextjs.md"
+    },
+    {
+      "id": "nginx",
+      "name": "Nginx",
+      "category": "infrastructure",
+      "kind": "static-server",
+      "scope": "project",
+      "summary": "Непривилегированный static server внутри web runtime image.",
+      "whatItIs": "Nginx — высокопроизводительный HTTP server и static file server.",
+      "purpose": "Раздаёт результат Next.js static export внутри `brai-web`.",
+      "usage": "Nginx получает только уже собранный `apps/web/out`; вход снаружи проходит через Caddy.",
+      "status": "active",
+      "version": "image-managed",
+      "location": "`apps/web/nginx.conf` и web runtime image.",
+      "limitations": "Nginx не является API edge и не должен получать database или NATS доступ.",
+      "sources": [
+        {
+          "label": "Nginx config",
+          "path": "apps/web/nginx.conf"
+        },
+        {
+          "label": "Infrastructure stack",
+          "path": "docs/stack/infrastructure-and-operations.md"
+        }
+      ],
+      "verification": ["Web container healthcheck", "Static web E2E"],
+      "tags": ["static", "web"],
+      "details": {
+        "whatItIsDetailed": "Nginx — это лёгкий HTTP server для выдачи готовых статических файлов и простых health surfaces. Он не собирает React-приложение и не реализует бизнес-API: его задача — эффективно отдать уже созданный static export.",
+        "whyNeededDetailed": "После сборки Next.js Brai не требуется отдельный Node application process для каждой страницы. Nginx уменьшает runtime surface web-контейнера, оставляет API за Gateway и отдаёт artifact предсказуемо, пока внешний TLS и маршрутизацию контролирует Caddy.",
+        "whyThisTool": "После static export нужен простой и предсказуемый server, а не отдельный application runtime.",
+        "howItWorksHere": "Nginx внутри `brai-web` читает только `apps/web/out`; внешний TLS и routing остаются ответственностью Caddy.",
+        "capabilities": [
+          "static file serving",
+          "непривилегированный web runtime",
+          "простая container health surface"
+        ],
+        "scenarios": [
+          "отдать собранный Next.js export",
+          "проверить статический сайт после image rebuild",
+          "отделить static web от Gateway"
+        ],
+        "commonMistakes": [
+          "добавить API logic в Nginx config",
+          "считать Nginx внешним ingress вместо Caddy"
+        ],
+        "relatedTools": ["nextjs", "caddy", "docker-compose"]
+      },
+      "page": "tools/nginx.md"
+    },
+    {
+      "id": "nodejs",
+      "name": "Node.js",
+      "category": "runtime",
+      "kind": "runtime",
+      "scope": "project",
+      "summary": "Среда, в которой запускаются приложения, сервисы, workers и инструменты Brai New.",
+      "whatItIs": "Node.js — серверный JavaScript runtime на движке V8.",
+      "purpose": "Даёт единую среду исполнения для TypeScript/ESM-кода всего монорепозитория.",
+      "usage": "Проект требует Node.js `>=22.22.3 <23`; CLI и сервисные процессы запускаются через Node.",
+      "status": "active",
+      "version": ">=22.22.3 <23",
+      "location": "Runtime проекта и `/srv/opt/node-v22.22.3` для host tooling.",
+      "limitations": "Не устанавливать отдельные runtime-копии в checkout.",
+      "sources": [
+        {
+          "label": "Project manifest",
+          "path": "package.json"
+        }
+      ],
+      "verification": ["`node --version`", "`pnpm run typecheck`"],
+      "tags": ["javascript", "esm"],
+      "details": {
+        "whatItIsDetailed": "Node.js — это runtime, который запускает JavaScript и TypeScript вне браузера на движке V8. Он предоставляет процесс, модули, сетевые API и системные возможности, поэтому на нём могут работать как Brai-сервисы, так и инженерные CLI.",
+        "whyNeededDetailed": "Brai нужен один предсказуемый runtime для web tooling, Gateway, доменных сервисов, workers, миграций и проверок. Зафиксированная ветка Node 22 уменьшает различия между локальной машиной, CI и контейнерами и не позволяет случайной версии изменить поведение сборки.",
+        "whyThisTool": "Один runtime для приложений, сервисов, CLI и тестового tooling уменьшает различия между локальной разработкой и контейнерным запуском.",
+        "howItWorksHere": "Node запускает ESM/TypeScript toolchain, а собранные приложения и сервисы получают Node runtime внутри своих образов.",
+        "capabilities": [
+          "исполнение server-side JavaScript и ESM",
+          "единая среда для CLI, workers и сервисов",
+          "поддержка Node 22 API"
+        ],
+        "scenarios": [
+          "запустить `pnpm run ci` и workspace scripts",
+          "исполнить Gateway или domain service в контейнере",
+          "запустить миграционный или policy CLI"
+        ],
+        "commonMistakes": [
+          "установить другую major-версию Node и получить несовместимый lockfile или build",
+          "воспринимать Node runtime как замену typecheck и тестам"
+        ],
+        "relatedTools": ["typescript", "pnpm", "tsx"]
+      },
+      "page": "tools/nodejs.md"
+    },
+    {
+      "id": "nx",
+      "name": "Nx",
+      "category": "runtime",
+      "kind": "task-graph",
+      "scope": "project",
+      "summary": "Task graph и cache runner для сборки, тестов и проверок монорепозитория.",
+      "whatItIs": "Nx — система оркестрации задач и зависимостей workspace.",
+      "purpose": "Запускает только нужные project targets и делает повторные проверки быстрее.",
+      "usage": "Nx выполняет `build`, `lint`, `test` и `typecheck`; Lerna задачи ему делегирует.",
+      "status": "active",
+      "version": "23.1.0",
+      "location": "`nx.json` и корневые package scripts.",
+      "limitations": "Nx Cloud отключён; source of truth для targets остаётся в project configuration.",
+      "sources": [
+        {
+          "label": "Nx config",
+          "path": "nx.json"
+        },
+        {
+          "label": "Package manifest",
+          "path": "package.json"
+        }
+      ],
+      "verification": ["`pnpm run build`", "`pnpm run test`"],
+      "tags": ["monorepo", "cache"],
+      "details": {
+        "whatItIsDetailed": "Nx — это оркестратор задач и графа зависимостей для монорепозитория. Он понимает, какие проекты зависят друг от друга, запускает targets в правильном порядке и сохраняет результаты, когда входные данные не изменились.",
+        "whyNeededDetailed": "В Brai нельзя надёжно управлять сборкой и тестами длинным списком ручных команд: изменение общего пакета затрагивает несколько consumers. Nx сокращает обратную связь, сохраняет единый порядок проверок и показывает, какой upstream-проект должен быть пересобран.",
+        "whyThisTool": "Единый task graph показывает зависимости между пакетами и не заставляет вручную помнить порядок build/test.",
+        "howItWorksHere": "Nx читает project targets, строит graph, использует локальный cache и выполняет команды для 16 workspace-проектов.",
+        "capabilities": [
+          "dependency-aware task graph",
+          "локальное кэширование результатов",
+          "единый запуск build, lint, test и typecheck"
+        ],
+        "scenarios": [
+          "запустить полный workspace lint",
+          "пересобрать только изменённый участок",
+          "понять, почему тест тянет upstream package build"
+        ],
+        "commonMistakes": [
+          "добавить второй task runner для тех же targets",
+          "считать cache hit доказательством свежего production runtime"
+        ],
+        "relatedTools": ["pnpm", "lerna", "typescript"]
+      },
+      "page": "tools/nx.md"
+    },
+    {
+      "id": "openspec",
+      "name": "OpenSpec",
+      "category": "documentation",
+      "kind": "specification-workflow",
+      "scope": "project",
+      "summary": "Хранит нормативные требования, сценарии и durable планы изменений.",
+      "whatItIs": "OpenSpec — spec-driven workflow и CLI для требований проекта.",
+      "purpose": "Отделяет то, как система должна себя вести, от текущей реализации и reader-facing docs.",
+      "usage": "Агент сам создаёт и применяет Change; постоянные specs находятся в `openspec/specs`.",
+      "status": "installed",
+      "version": "1.6.0",
+      "location": "`openspec/`, `/srv/opt/node-v22.22.3` и project-local Codex integration.",
+      "limitations": "OpenSpec не заменяет документацию текущего устройства и ADR rationale.",
+      "sources": [
+        {
+          "label": "OpenSpec config",
+          "path": "openspec/config.yaml"
+        },
+        {
+          "label": "Documentation methodology",
+          "path": "docs/documentation-methodology.md"
+        }
+      ],
+      "verification": [
+        "`openspec validate --all --strict`",
+        "`openspec doctor`"
+      ],
+      "tags": ["requirements", "workflow"],
+      "details": {
+        "whatItIsDetailed": "OpenSpec — это нормативный workflow для описания требований, сценариев, дизайна и задач изменения до и во время реализации. Он разделяет то, как система должна вести себя, от текущей docs и rationale архитектурных решений.",
+        "whyNeededDetailed": "Brai развивается несколькими агентами, поэтому одной переписки недостаточно, чтобы сохранить обязательные инварианты и не потерять контекст. OpenSpec даёт проверяемый источник требований, связывает реализацию с задачами и позволяет завершить изменение только после валидации.",
+        "whyThisTool": "Durable requirements нужны, чтобы implementation, docs и agent workflow не расходились с принятым поведением.",
+        "howItWorksHere": "Агент создаёт Change из natural-language задачи, затем синхронизирует permanent specs после проверок.",
+        "capabilities": [
+          "нормативные requirements и scenarios",
+          "proposal/design/tasks для Change",
+          "strict validation и archive workflow"
+        ],
+        "scenarios": [
+          "оформить новый feature contract",
+          "продолжить активный Change",
+          "проверить все specs перед handoff"
+        ],
+        "commonMistakes": [
+          "копировать rationale в normative spec",
+          "редактировать архивный Change вместо нового"
+        ],
+        "relatedTools": ["memory-bank", "log4brains", "prettier"]
+      },
+      "page": "tools/openspec.md"
+    },
+    {
+      "id": "postgres-client",
+      "name": "pg",
+      "category": "data",
+      "kind": "database-client",
+      "scope": "project",
+      "summary": "Node.js PostgreSQL client для сервисов-владельцев данных и миграций.",
+      "whatItIs": "`pg` — драйвер PostgreSQL для Node.js.",
+      "purpose": "Позволяет сервисам выполнять свои миграции и database operations без передачи доступа web-слою.",
+      "usage": "Клиент используется только в database-owning packages и migration tooling.",
+      "status": "active",
+      "version": "8.16.3",
+      "location": "Service and infrastructure package manifests.",
+      "limitations": "Gateway и web не должны импортировать database client.",
+      "sources": [
+        {
+          "label": "Workspace manifests",
+          "path": "package.json"
+        },
+        {
+          "label": "Supabase infrastructure",
+          "path": "infrastructure/supabase/package.json"
+        }
+      ],
+      "verification": ["Migration tests", "`pnpm run typecheck`"],
+      "tags": ["postgres", "node"],
+      "details": {
+        "whatItIsDetailed": "`pg` — это Node.js-клиент PostgreSQL, который открывает соединения, выполняет parameterized queries и управляет pool. Это библиотека для backend и migration tooling, а не клиент, который должен попадать в browser bundle.",
+        "whyNeededDetailed": "Сервису-владельцу данных нужен прямой и ограниченный доступ к своей схеме для миграций и доменных операций. `pg` даёт этот доступ из service process, позволяя сохранить Gateway и web вне database boundary и использовать отдельную runtime role.",
+        "whyThisTool": "Сервисам нужен прямой, но ограниченный клиент PostgreSQL для migrations и операций своей схемы.",
+        "howItWorksHere": "`pg` импортируется database-owning packages и не попадает в browser-facing web/Gateway boundary.",
+        "capabilities": [
+          "pooling и parameterized queries",
+          "подключение migration tooling",
+          "Node.js integration с PostgreSQL"
+        ],
+        "scenarios": [
+          "применить migration one-off job",
+          "записать Activity в Factory schema",
+          "проверить service-owned role"
+        ],
+        "commonMistakes": [
+          "использовать superuser в runtime",
+          "подключить клиент в web package"
+        ],
+        "relatedTools": ["supabase-postgresql", "typescript", "vitest"]
+      },
+      "page": "tools/postgres-client.md"
+    },
+    {
+      "id": "pino",
+      "name": "Pino",
+      "category": "application",
+      "kind": "logging",
+      "scope": "project",
+      "summary": "Структурированные логи для приложений и сервисов.",
+      "whatItIs": "Pino — быстрый JSON logger для Node.js.",
+      "purpose": "Делает диагностические события машиночитаемыми и пригодными для operational analysis.",
+      "usage": "Logger подключён к Gateway/runtime helpers с согласованными полями.",
+      "status": "active",
+      "version": "10.3.1",
+      "location": "Gateway и `packages/runtime`.",
+      "limitations": "Логи не должны содержать секретные значения или полные пользовательские payloads без необходимости.",
+      "sources": [
+        {
+          "label": "Gateway manifest",
+          "path": "apps/api-gateway/package.json"
+        },
+        {
+          "label": "Runtime package",
+          "path": "packages/runtime/package.json"
+        }
+      ],
+      "verification": ["Service tests", "Container log inspection"],
+      "tags": ["logs", "observability"],
+      "details": {
+        "whatItIsDetailed": "Pino — это быстрый structured logger для Node.js, который записывает события в машиночитаемом JSON-виде. Помимо текста сообщения, запись может содержать уровень, request context и диагностические поля, удобные для container logs.",
+        "whyNeededDetailed": "Сервисы Brai работают через несколько процессов и NATS, поэтому произвольный текстовый log трудно сопоставить по времени и correlation id. Pino делает operational evidence пригодным для диагностики, не разрешая при этом логировать токены, пароли или целые пользовательские payloads.",
+        "whyThisTool": "Структурированные логи нужны для диагностики сервисов без хрупкого парсинга произвольного текста.",
+        "howItWorksHere": "Pino пишет JSON events из Gateway/runtime helpers; container logs остаются operational evidence.",
+        "capabilities": [
+          "быстрый structured logging",
+          "уровни и context fields",
+          "удобный container log output"
+        ],
+        "scenarios": [
+          "записать request correlation event",
+          "объяснить NATS timeout",
+          "проверить startup/readiness sequence"
+        ],
+        "commonMistakes": [
+          "записывать секреты или целые пользовательские payloads",
+          "заменять error handling одним log statement"
+        ],
+        "relatedTools": ["fastify", "nodejs", "nats"]
+      },
+      "page": "tools/pino.md"
+    },
+    {
+      "id": "playwright",
+      "name": "Playwright",
+      "category": "quality",
+      "kind": "browser-testing",
+      "scope": "project",
+      "summary": "E2E-проверки web-сценариев в desktop и mobile viewport.",
+      "whatItIs": "Playwright — browser automation framework для воспроизводимых UI tests.",
+      "purpose": "Проверяет пользовательский путь от страницы до Gateway и устойчивость responsive UI.",
+      "usage": "Сценарии используют Chromium, desktop viewport и Pixel 7 profile.",
+      "status": "active",
+      "version": "1.60.0",
+      "location": "`apps/web/playwright.config.ts` и `apps/web/tests/e2e`.",
+      "limitations": "Protected production/dev URL дополнительно проверяется Chrome DevTools MCP.",
+      "sources": [
+        {
+          "label": "Playwright config",
+          "path": "apps/web/playwright.config.ts"
+        },
+        {
+          "label": "E2E tests",
+          "path": "apps/web/tests/e2e/factory.spec.ts"
+        }
+      ],
+      "verification": ["`pnpm --dir apps/web e2e`", "`pnpm run ci`"],
+      "tags": ["e2e", "browser", "mobile"],
+      "details": {
+        "whatItIsDetailed": "Playwright — это browser automation и end-to-end framework, который управляет настоящим Chromium и наблюдает пользовательские действия, DOM и network flow. В отличие от component test, он может пройти путь от страницы через ingress и Gateway до backend результата.",
+        "whyNeededDetailed": "Для Brai важно проверять не только React-компонент, но и собранный UI, Caddy, API и сохранение данных вместе. Playwright ловит поломки маршрутизации, responsive layout и пользовательского workflow, которые не видны unit-тесту.",
+        "whyThisTool": "Реальный браузерный E2E проверяет цепочку UI → Caddy/Gateway → NATS, а не только отдельный компонент.",
+        "howItWorksHere": "Playwright запускает Chromium сценарии в desktop и Pixel 7 viewports против локального или заданного URL.",
+        "capabilities": [
+          "browser automation",
+          "desktop/mobile viewport checks",
+          "network-visible user workflows"
+        ],
+        "scenarios": [
+          "создать Activity через published UI",
+          "проверить reload и сохранение данных",
+          "найти mobile overflow"
+        ],
+        "commonMistakes": [
+          "тестировать protected route в личном browser profile",
+          "подменять E2E локальным unit test"
+        ],
+        "relatedTools": [
+          "nextjs",
+          "react",
+          "chrome-devtools",
+          "testing-library"
+        ]
+      },
+      "page": "tools/playwright.md"
+    },
+    {
+      "id": "pnpm",
+      "name": "pnpm",
+      "category": "runtime",
+      "kind": "package-manager",
+      "scope": "project",
+      "summary": "Package manager, который устанавливает зависимости и запускает workspace-команды.",
+      "whatItIs": "pnpm — быстрый package manager с workspace и общим store.",
+      "purpose": "Фиксирует единый lockfile, catalog версий и воспроизводимую установку Brai New.",
+      "usage": "Используем pnpm 11 через корневые scripts и фильтры workspace.",
+      "status": "installed",
+      "version": ">=11.13.1 <12",
+      "location": "`/srv/opt/pnpm` и project-local `.pnpm-store`.",
+      "limitations": "Зависимости устанавливаются из lockfile; ручное редактирование lockfile запрещено.",
+      "sources": [
+        {
+          "label": "Package manifest",
+          "path": "package.json"
+        },
+        {
+          "label": "Workspace config",
+          "path": "pnpm-workspace.yaml"
+        }
+      ],
+      "verification": ["`pnpm --version`", "`pnpm install --frozen-lockfile`"],
+      "tags": ["dependencies", "workspace"],
+      "details": {
+        "whatItIsDetailed": "pnpm — это package manager для Node.js с workspace-моделью и общим хранилищем зависимостей. Он читает package manifests и lockfile, связывает локальные пакеты и запускает команды проекта с заданными фильтрами.",
+        "whyNeededDetailed": "Brai — монорепозиторий, где несколько приложений и сервисов должны использовать совместимые версии библиотек. pnpm с frozen lockfile делает установку воспроизводимой, экономит место и не даёт незаметно получить другой dependency graph на другой машине.",
+        "whyThisTool": "Workspace с одним lockfile и catalog версий нужен для согласованной сборки множества приложений и пакетов.",
+        "howItWorksHere": "pnpm связывает workspace manifests, хранит зависимости в общем store и запускает корневые фильтрованные команды.",
+        "capabilities": [
+          "frozen install по lockfile",
+          "workspace filters и package scripts",
+          "экономный общий dependency store"
+        ],
+        "scenarios": [
+          "подготовить чистое окружение через `pnpm install --frozen-lockfile`",
+          "запустить тесты конкретного приложения",
+          "обновить прямую зависимость с проверкой lockfile"
+        ],
+        "commonMistakes": [
+          "править lockfile вручную",
+          "запускать npm/yarn-команды, которые обходят project policy"
+        ],
+        "relatedTools": ["nodejs", "nx", "lerna"]
+      },
+      "page": "tools/pnpm.md"
+    },
+    {
+      "id": "prettier",
+      "name": "Prettier",
+      "category": "quality",
+      "kind": "formatter",
+      "scope": "project",
+      "summary": "Автоматически приводит Markdown, JSON и исходники к одному формату.",
+      "whatItIs": "Prettier — opinionated formatter для исходников и документации.",
+      "purpose": "Убирает механические споры и делает generated и hand-written файлы предсказуемыми.",
+      "usage": "Корневой `.prettierrc.json` задаёт baseline; CI запускает `format:check`.",
+      "status": "active",
+      "version": "3.9.5",
+      "location": "Корневой `.prettierrc.json` и package scripts.",
+      "limitations": "Форматтер не решает архитектурные и runtime-вопросы.",
+      "sources": [
+        {
+          "label": "Prettier config",
+          "path": ".prettierrc.json"
+        },
+        {
+          "label": "Code style",
+          "path": "docs/reference/code-style.md"
+        }
+      ],
+      "verification": ["`pnpm run format:check`"],
+      "tags": ["format", "docs"],
+      "details": {
+        "whatItIsDetailed": "Prettier — это deterministic formatter для исходников, Markdown, JSON и других поддерживаемых форматов. Он принимает уже написанный текст и приводит его к единой форме, не решая за автора архитектуру и смысл документа.",
+        "whyNeededDetailed": "Brai генерирует много страниц и JSON из manifest, поэтому ручные переносы не должны создавать постоянный шум в diff. Единый Prettier делает output стабильным, облегчает review и позволяет CI отличить содержательное изменение от случайного форматного расхождения.",
+        "whyThisTool": "Один formatter одинаково оформляет исходники, Markdown и generated catalog output.",
+        "howItWorksHere": "Корневой config задаёт baseline; generator форматирует свои Markdown/JSON, а CI проверяет весь workspace.",
+        "capabilities": [
+          "детерминированное форматирование",
+          "поддержка Markdown и JSON",
+          "format gate до остальных CI targets"
+        ],
+        "scenarios": [
+          "перегенерировать stack pages",
+          "проверить документационный change",
+          "исправить механические переносы перед review"
+        ],
+        "commonMistakes": [
+          "редактировать generated page вместо manifest",
+          "массово форматировать архивные материалы без причины"
+        ],
+        "relatedTools": ["eslint", "typescript", "openspec"]
+      },
+      "page": "tools/prettier.md"
+    },
+    {
+      "id": "radix-ui",
+      "name": "Radix UI",
+      "category": "application",
+      "kind": "ui-primitives",
+      "scope": "project",
+      "summary": "Accessible primitives для интерактивных web-компонентов.",
+      "whatItIs": "Radix UI — набор composable accessible React primitives.",
+      "purpose": "Даёт корректные базовые состояния и keyboard behavior без ручного изобретения accessibility.",
+      "usage": "Примитивы подключаются в `apps/web` и оформляются через проектную визуальную систему.",
+      "status": "active",
+      "version": "1.6.0",
+      "location": "`apps/web`.",
+      "limitations": "Primitive не заменяет проверку готового интерфейса на desktop и mobile.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        }
+      ],
+      "verification": [
+        "React component tests",
+        "Playwright accessibility flow"
+      ],
+      "tags": ["ui", "accessibility"],
+      "details": {
+        "whatItIsDetailed": "Radix UI — это набор accessible React primitives для dialog, menu, select, focus management и других сложных interaction patterns. Primitives дают поведение и semantics, но не навязывают готовую визуальную тему, поэтому styling остаётся в проекте.",
+        "whyNeededDetailed": "Stack pages и интерфейс Brai должны корректно работать с клавиатурой, focus и screen-reader semantics без копирования сложной interaction logic в каждом компоненте. Radix снижает риск недоступных controls, а финальная проверка всё равно остаётся обязанностью UI tests и browser QA.",
+        "whyThisTool": "Accessible primitives позволяют получить корректные keyboard/focus states без повторного написания сложной interaction logic.",
+        "howItWorksHere": "Radix-компоненты используются внутри React web layer и получают визуальное оформление через Tailwind.",
+        "capabilities": [
+          "accessible interaction primitives",
+          "keyboard и focus behavior",
+          "composable React API"
+        ],
+        "scenarios": [
+          "добавить menu/dialog/select",
+          "проверить focus flow",
+          "собрать reusable control для страниц стека"
+        ],
+        "commonMistakes": [
+          "считать primitive полной visual design system",
+          "не проверять final component на keyboard и mobile"
+        ],
+        "relatedTools": ["react", "tailwind-css", "testing-library"]
+      },
+      "page": "tools/radix-ui.md"
+    },
+    {
+      "id": "react",
+      "name": "React",
+      "category": "application",
+      "kind": "ui-library",
+      "scope": "project",
+      "summary": "UI-библиотека, из которой собраны интерактивные компоненты Brai New.",
+      "whatItIs": "React — библиотека декларативных пользовательских интерфейсов.",
+      "purpose": "Позволяет держать форму, список Activity и состояние web-клиента компонентными.",
+      "usage": "React и React DOM используются внутри `apps/web` под управлением Next.js.",
+      "status": "active",
+      "version": "19.2.4",
+      "location": "`apps/web`.",
+      "limitations": "Компоненты web не должны обходить same-origin Gateway boundary.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        }
+      ],
+      "verification": ["React component tests", "`pnpm --dir apps/web test`"],
+      "tags": ["web", "components"],
+      "details": {
+        "whatItIsDetailed": "React — это библиотека для построения интерфейса из компонентов, которые описывают своё состояние и отображение. Компонентная модель помогает разделять формы, списки, состояния загрузки и ошибки на повторно используемые части с явным поведением.",
+        "whyNeededDetailed": "Интерфейс Brai постоянно показывает переходы состояний: запрос отправлен, выполняется, завершился или вернул ошибку. React позволяет собрать эти состояния в проверяемые компоненты и не смешивать UI-логику с server credentials и владением доменными данными.",
+        "whyThisTool": "Компонентная модель хорошо подходит для интерфейса, где формы, списки, loading и error states должны быть согласованы.",
+        "howItWorksHere": "React-компоненты живут внутри Next.js web app и используют client helpers для same-origin API.",
+        "capabilities": [
+          "композиция UI-компонентов",
+          "управление локальным состоянием",
+          "переиспользование доступных primitives"
+        ],
+        "scenarios": [
+          "создать форму Activity",
+          "показать optimistic/loading/error state",
+          "покрыть компонент поведенческим тестом"
+        ],
+        "commonMistakes": [
+          "проверять только внутренний state вместо пользовательского результата",
+          "размещать server credentials в client component"
+        ],
+        "relatedTools": ["nextjs", "radix-ui", "testing-library", "vitest"]
+      },
+      "page": "tools/react.md"
+    },
+    {
+      "id": "rtk",
+      "name": "RTK",
+      "category": "developer-experience",
+      "kind": "host-cli-wrapper",
+      "scope": "host",
+      "summary": "Сокращает шумный shell output, чтобы агент видел главное и тратил меньше контекста.",
+      "whatItIs": "RTK (Rust Token Killer) — CLI-wrapper, который структурирует вывод распространённых команд разработки.",
+      "purpose": "Ускоряет навигацию, проверки, тесты и Docker-диагностику, сохраняя возможность получить полный вывод.",
+      "usage": "Команды запускаются с префиксом `rtk`; для точного вывода используется `RTK_DISABLED=1` или `rtk proxy`.",
+      "status": "installed",
+      "version": "0.42.4",
+      "location": "`/srv/opt/rtk/bin/rtk`, PATH-команда `rtk`.",
+      "limitations": "RTK не меняет поведение команды; при необходимости проверки полного вывода используйте raw режим.",
+      "sources": [
+        {
+          "label": "Project usage rules",
+          "path": "RTK.md"
+        },
+        {
+          "label": "Host registry",
+          "path": "/home/mark/DEPLOYMENT.md"
+        }
+      ],
+      "verification": ["`rtk --version`", "`which rtk`"],
+      "tags": ["shell", "agent", "output"],
+      "details": {
+        "whatItIsDetailed": "RTK (Rust Token Killer) — это CLI-wrapper, который перехватывает поддерживаемые команды и показывает структурированный сокращённый вывод. Он не меняет результат git, теста или Docker-команды, а меняет только форму представления output и оставляет raw fallback для подробного расследования.",
+        "whyNeededDetailed": "Агент выполняет много shell-команд, и лишний повторяющийся вывод вытесняет из контекста ошибки, статусы и фактические результаты. RTK нужен, чтобы быстрее видеть главное при обычной работе, но при спорной диагностике агент обязан переключиться на raw output и не принимать сокращённый вид за полный лог.",
+        "whyThisTool": "У агента много шумных shell-команд; сокращённый вывод оставляет в контексте ошибки, статусы и главное содержимое.",
+        "howItWorksHere": "PATH-команда `rtk` проксирует поддерживаемые команды, структурирует вывод и позволяет перейти в raw режим через `rtk proxy`.",
+        "capabilities": [
+          "сжатие вывода git, rg, тестов и Docker",
+          "сохранение raw fallback",
+          "статистика экономии через `rtk gain`"
+        ],
+        "scenarios": [
+          "быстро проверить статус и diff",
+          "запустить тесты с компактным выводом",
+          "включить raw режим при точной диагностике"
+        ],
+        "commonMistakes": [
+          "считать сокращённый вывод полным логом",
+          "забыть `RTK_DISABLED=1` или `rtk proxy` при расследовании деталей"
+        ],
+        "relatedTools": ["nodejs", "pnpm", "memory-bank"]
+      },
+      "page": "tools/rtk.md"
+    },
+    {
+      "id": "supabase-postgresql",
+      "name": "Supabase / PostgreSQL",
+      "category": "infrastructure",
+      "kind": "database-platform",
+      "scope": "host",
+      "summary": "Database platform, в которой сервисы владеют своими схемами и ролями.",
+      "whatItIs": "Supabase — управляемый слой вокруг PostgreSQL, миграций и database roles.",
+      "purpose": "Хранит доменные данные отдельно по service-owned schemas и least-privilege ролям.",
+      "usage": "Factory и Access применяют миграции через infrastructure/supabase; web и Gateway к базе не подключаются.",
+      "status": "installed",
+      "version": "host-managed",
+      "location": "`infrastructure/supabase` и shared Supabase runtime.",
+      "limitations": "Database access принадлежит сервису-владельцу и не выносится в shared web layer.",
+      "sources": [
+        {
+          "label": "Supabase README",
+          "path": "infrastructure/supabase/README.md"
+        },
+        {
+          "label": "Factory source",
+          "path": "services/brai-factory/src"
+        }
+      ],
+      "verification": [
+        "Supabase migration checks",
+        "Service integration tests"
+      ],
+      "tags": ["postgres", "migrations", "ownership"],
+      "details": {
+        "whatItIsDetailed": "Supabase/PostgreSQL — это PostgreSQL-хранилище с операционным и migration tooling слоем Supabase. PostgreSQL хранит таблицы, схемы и роли, а service-owned migrations описывают, какие данные принадлежат конкретному доменному сервису.",
+        "whyNeededDetailed": "Factory и другие доменные части Brai должны владеть своими данными и не раздавать database credentials web или Gateway. PostgreSQL даёт транзакционность и зрелые права доступа, а Supabase упрощает управляемое применение схем и проверку состояния без смешения владельцев.",
+        "whyThisTool": "PostgreSQL даёт надёжное service-owned хранение, а Supabase предоставляет операционный слой и schema tooling.",
+        "howItWorksHere": "Каждый database-owning service применяет свои migrations и role grants; web и Gateway не владеют database connection.",
+        "capabilities": [
+          "schemas и роли PostgreSQL",
+          "миграции с проверяемым состоянием",
+          "least-privilege ownership boundary"
+        ],
+        "scenarios": [
+          "применить Factory migration",
+          "проверить runtime role grants",
+          "сохранить доменные данные через service restart"
+        ],
+        "commonMistakes": [
+          "дать Gateway database access",
+          "смешать migration role и runtime role"
+        ],
+        "relatedTools": ["postgres-client", "nats", "docker-compose"]
+      },
+      "page": "tools/supabase-postgresql.md"
+    },
+    {
+      "id": "tailwind-css",
+      "name": "Tailwind CSS",
+      "category": "application",
+      "kind": "styling",
+      "scope": "project",
+      "summary": "Utility-first слой стилей для интерфейса Brai New.",
+      "whatItIs": "Tailwind CSS — генератор utility-классов и design primitives для CSS.",
+      "purpose": "Помогает быстро собирать согласованный UI без отдельного набора ручных CSS-файлов.",
+      "usage": "Tailwind подключён в web build через PostCSS и используется в компонентах.",
+      "status": "active",
+      "version": "4.3.1",
+      "location": "`apps/web` и `postcss.config.mjs`.",
+      "limitations": "Изменения визуальной системы проверяются на desktop и mobile viewport.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        },
+        {
+          "label": "PostCSS config",
+          "path": "apps/web/postcss.config.mjs"
+        }
+      ],
+      "verification": [
+        "`pnpm --dir apps/web build`",
+        "Playwright desktop/mobile checks"
+      ],
+      "tags": ["css", "ui"],
+      "details": {
+        "whatItIsDetailed": "Tailwind CSS — это utility-first CSS framework, где визуальные правила задаются небольшими классами для layout, spacing, цвета, typography и responsive states. Он генерирует итоговый CSS из реально использованных классов, поэтому стили остаются близко к компоненту.",
+        "whyNeededDetailed": "Страницы Brai должны быстро меняться и одинаково работать на desktop и mobile, а их визуальные состояния должны быть видны рядом с JSX. Tailwind сокращает расхождения в spacing и цветах и помогает поддерживать единый UI без отдельного большого stylesheet для каждой страницы.",
+        "whyThisTool": "Utility-first CSS ускоряет итерации интерфейса и держит spacing, color и responsive rules рядом с компонентом.",
+        "howItWorksHere": "Tailwind проходит через PostCSS и генерирует только классы, найденные в web source; production output отдаёт Nginx.",
+        "capabilities": [
+          "utility-классы для layout и states",
+          "responsive modifiers",
+          "согласованный визуальный baseline"
+        ],
+        "scenarios": [
+          "собрать карточку инструмента",
+          "добавить mobile layout",
+          "проверить hover/focus/error state в браузере"
+        ],
+        "commonMistakes": [
+          "исправлять visual regression только на desktop",
+          "раздувать className вместо выделения повторного компонента"
+        ],
+        "relatedTools": ["nextjs", "react", "radix-ui", "class-names-tools"]
+      },
+      "page": "tools/tailwind-css.md"
+    },
+    {
+      "id": "testing-library",
+      "name": "Testing Library",
+      "category": "quality",
+      "kind": "component-testing",
+      "scope": "project",
+      "summary": "Тестирует UI через поведение пользователя и DOM assertions.",
+      "whatItIs": "Testing Library — набор helpers для проверок DOM и React components без привязки к implementation details.",
+      "purpose": "Помогает проверять доступные labels, действия и видимый результат компонентов.",
+      "usage": "DOM и React packages используются в web component tests.",
+      "status": "active",
+      "version": "DOM 10.4.1; React 16.3.2",
+      "location": "`apps/web`.",
+      "limitations": "Component tests не заменяют E2E и real published URL QA.",
+      "sources": [
+        {
+          "label": "Web manifest",
+          "path": "apps/web/package.json"
+        }
+      ],
+      "verification": ["`pnpm --dir apps/web test`"],
+      "tags": ["tests", "dom", "react"],
+      "details": {
+        "whatItIsDetailed": "Testing Library — это набор инструментов для component tests, которые ищут элементы так, как их видит пользователь: по role, label, text и accessible name. Он помогает проверять rendered DOM и действия пользователя, а не внутренние state-поля или implementation classes.",
+        "whyNeededDetailed": "Brai UI должен оставаться рабочим после изменения структуры компонентов и стилей, поэтому тесты не должны ломаться от безвредного refactor markup. Testing Library закрепляет observable behavior и одновременно подсвечивает, когда control не имеет понятного accessible имени.",
+        "whyThisTool": "UI tests должны описывать действия и наблюдаемый результат пользователя, а не внутреннюю структуру компонента.",
+        "howItWorksHere": "Testing Library queries DOM по ролям, labels и тексту; React tests запускаются в Vitest/jsdom.",
+        "capabilities": [
+          "user-facing DOM queries",
+          "React component rendering",
+          "accessibility-oriented assertions"
+        ],
+        "scenarios": [
+          "найти input по label",
+          "проверить submit и error message",
+          "проверить loading state после действия"
+        ],
+        "commonMistakes": [
+          "искать элементы по implementation class",
+          "тестировать компонент без проверки accessible name"
+        ],
+        "relatedTools": ["react", "vitest", "jsdom", "playwright"]
+      },
+      "page": "tools/testing-library.md"
+    },
+    {
+      "id": "tsx",
+      "name": "tsx",
+      "category": "runtime",
+      "kind": "typescript-runner",
+      "scope": "project",
+      "summary": "Запускает TypeScript CLI и миграционные скрипты прямо в Node.js.",
+      "whatItIs": "tsx — небольшой runner для TypeScript и ESM без ручной промежуточной сборки.",
+      "purpose": "Упрощает запуск migration tooling и project utilities.",
+      "usage": "Используется в project scripts там, где нужен TypeScript entrypoint.",
+      "status": "active",
+      "version": "4.23.1",
+      "location": "Root package manifest и CLI scripts.",
+      "limitations": "Production services запускаются из собранных артефактов.",
+      "sources": [
+        {
+          "label": "Package manifest",
+          "path": "package.json"
+        }
+      ],
+      "verification": ["`pnpm exec tsx --version`"],
+      "tags": ["typescript", "cli"],
+      "details": {
+        "whatItIsDetailed": "tsx — это launcher для запуска TypeScript и ESM entrypoints прямо из исходников через Node-compatible workflow. Он удобен для одноразовых utilities, migration helpers и policy scripts, которым не нужен отдельный предварительный build.",
+        "whyNeededDetailed": "В Brai есть небольшие инженерные scripts, которые важно запускать одинаково локально и в проверках. tsx убирает лишний промежуточный compile step для таких случаев, но production-сервисы всё равно должны идти через обычные build artifacts и project targets.",
+        "whyThisTool": "Небольшие TypeScript utilities и migrations удобнее запускать без отдельной ручной сборки.",
+        "howItWorksHere": "tsx разрешает TypeScript/ESM entrypoint через Node, а production services всё равно запускаются из build artifacts.",
+        "capabilities": [
+          "быстрый TypeScript CLI запуск",
+          "ESM-friendly execution",
+          "удобный local migration tooling"
+        ],
+        "scenarios": [
+          "запустить policy/preflight utility",
+          "выполнить migration helper",
+          "проверить одноразовый script перед включением в package task"
+        ],
+        "commonMistakes": [
+          "использовать tsx как production runtime для собранного сервиса",
+          "обойти project script и потерять reproducible arguments"
+        ],
+        "relatedTools": ["nodejs", "typescript", "pnpm"]
+      },
+      "page": "tools/tsx.md"
+    },
+    {
+      "id": "typescript",
+      "name": "TypeScript",
+      "category": "runtime",
+      "kind": "language",
+      "scope": "project",
+      "summary": "Строгий язык и компилятор, который описывает контракты Brai New до запуска.",
+      "whatItIs": "TypeScript — типизированный надмножество JavaScript с проверкой на этапе сборки.",
+      "purpose": "Помогает удерживать границы между web, Gateway, NATS и сервисами явными.",
+      "usage": "Код компилируется в ESM с `strict: true` и общим `tsconfig.base.json`.",
+      "status": "active",
+      "version": "5.9.3",
+      "location": "Workspace package manifests и `tsconfig.base.json`.",
+      "limitations": "Типы не заменяют runtime validation на внешних границах.",
+      "sources": [
+        {
+          "label": "Workspace manifest",
+          "path": "package.json"
+        },
+        {
+          "label": "Compiler config",
+          "path": "tsconfig.base.json"
+        }
+      ],
+      "verification": ["`pnpm run typecheck`"],
+      "tags": ["types", "contracts"],
+      "details": {
+        "whatItIsDetailed": "TypeScript — это язык поверх JavaScript и компилятор, который добавляет статические типы, интерфейсы и проверку контрактов до запуска программы. Он не заменяет JavaScript runtime, а помогает описать данные и связи между частями системы до того, как код попадёт в production.",
+        "whyNeededDetailed": "Brai проходит через несколько границ: браузер, Gateway, NATS и service-owned пакеты, поэтому неявные структуры быстро превращаются в ошибки интеграции. TypeScript делает эти границы видимыми в коде и ловит несовместимые изменения до запуска тестов или сервиса.",
+        "whyThisTool": "Явные типы особенно важны там, где один запрос проходит через web, Gateway, NATS и service-owned код.",
+        "howItWorksHere": "Компилятор проверяет ESM-пакеты по общему strict tsconfig, а runtime schemas отдельно проверяют внешние данные.",
+        "capabilities": [
+          "описание API и domain contracts",
+          "проверка типов до запуска",
+          "генерация ESM и source maps"
+        ],
+        "scenarios": [
+          "изменить request/response contract",
+          "добавить service helper с type-safe boundary",
+          "проверить shared package перед сборкой"
+        ],
+        "commonMistakes": [
+          "считать compile-time типы runtime validation",
+          "ослабить strict-настройки локально вместо исправления контракта"
+        ],
+        "relatedTools": ["nodejs", "zod", "eslint"]
+      },
+      "page": "tools/typescript.md"
+    },
+    {
+      "id": "vitest",
+      "name": "Vitest",
+      "category": "quality",
+      "kind": "test-runner",
+      "scope": "project",
+      "summary": "Быстрый runner unit и integration тестов.",
+      "whatItIs": "Vitest — Vite-native test framework для TypeScript и JavaScript.",
+      "purpose": "Проверяет контракты, runtime helpers, Gateway и компоненты до интеграционного запуска.",
+      "usage": "Тестовые targets запускаются через Nx с `NODE_ENV=test`.",
+      "status": "active",
+      "version": "4.1.8",
+      "location": "Project package manifests и `vitest.config.ts`.",
+      "limitations": "Unit tests не заменяют published URL QA и full-stack сценарии.",
+      "sources": [
+        {
+          "label": "Web Vitest config",
+          "path": "apps/web/vitest.config.ts"
+        },
+        {
+          "label": "Package manifest",
+          "path": "package.json"
+        }
+      ],
+      "verification": ["`pnpm run test`", "Focused `node --test` checks"],
+      "tags": ["tests", "unit"],
+      "details": {
+        "whatItIsDetailed": "Vitest — это быстрый test runner для unit и integration тестов в TypeScript/JavaScript workspace. Он запускает тестовые файлы в Node-процессе, умеет работать с DOM environment и показывает, какой контракт или поведение нарушено.",
+        "whyNeededDetailed": "Brai нужно быстро проверять helpers, contracts, service behavior и генератор до дорогих Compose и browser checks. Vitest даёт короткий feedback loop, но не притворяется полноценным браузером или доказательством работы всей опубликованной цепочки.",
+        "whyThisTool": "Быстрые unit/integration tests дают обратную связь до более дорогих Compose и browser checks.",
+        "howItWorksHere": "Vitest запускается Nx с `NODE_ENV=test`; web использует Testing Library и jsdom где нужен DOM.",
+        "capabilities": [
+          "unit и integration tests",
+          "быстрый TypeScript transform",
+          "watch/cache-friendly developer workflow"
+        ],
+        "scenarios": [
+          "проверить Zod или NATS helper",
+          "покрыть React component behavior",
+          "добавить regression test для generator"
+        ],
+        "commonMistakes": [
+          "проверять implementation details вместо behavior",
+          "считать Vitest заменой настоящего Chromium или full-stack test"
+        ],
+        "relatedTools": ["testing-library", "jsdom", "playwright", "nx"]
+      },
+      "page": "tools/vitest.md"
+    },
+    {
+      "id": "zod",
+      "name": "Zod",
+      "category": "application",
+      "kind": "validation-library",
+      "scope": "project",
+      "summary": "Runtime-проверка входных данных и контрактов на HTTP/NATS границах.",
+      "whatItIs": "Zod — TypeScript-first библиотека схем и runtime validation.",
+      "purpose": "Не даёт невалидному запросу пересечь Gateway и service boundaries.",
+      "usage": "Схемы Zod применяются для API payloads и версионируемых контрактов.",
+      "status": "active",
+      "version": "4.4.3",
+      "location": "Gateway и `packages/contracts`.",
+      "limitations": "Схема должна совпадать с нормативным контрактом и тестами.",
+      "sources": [
+        {
+          "label": "Gateway manifest",
+          "path": "apps/api-gateway/package.json"
+        },
+        {
+          "label": "Contracts package",
+          "path": "packages/contracts/package.json"
+        }
+      ],
+      "verification": ["Contract tests", "`pnpm run typecheck`"],
+      "tags": ["validation", "contracts"],
+      "details": {
+        "whatItIsDetailed": "Zod — это библиотека runtime-схем, которые проверяют реальные значения и одновременно могут выводить из схем TypeScript-типы. В отличие от одного интерфейса TypeScript, Zod работает после получения HTTP payload или сообщения и может вернуть понятную ошибку.",
+        "whyNeededDetailed": "Данные на границе Brai приходят извне compile-time мира и могут быть неполными, лишними или злонамеренно сформированными. Zod не даёт такому payload пройти в Gateway, NATS или service code и удерживает request/response contracts одинаковыми для отправителя и получателя.",
+        "whyThisTool": "TypeScript types не защищают runtime boundary, поэтому входящие payloads должны проверяться отдельными схемами.",
+        "howItWorksHere": "Zod schemas валидируют HTTP и contract data до того, как команда попадёт в NATS или service code.",
+        "capabilities": [
+          "runtime validation",
+          "вывод TypeScript типов из схем",
+          "явные сообщения об ошибках"
+        ],
+        "scenarios": [
+          "проверить Activity create payload",
+          "отвергнуть неизвестное поле на Gateway",
+          "согласовать request и response contract"
+        ],
+        "commonMistakes": [
+          "проверить тип только на compile-time",
+          "дублировать одну схему в нескольких местах без общего contract package"
+        ],
+        "relatedTools": ["typescript", "fastify", "nats"]
+      },
+      "page": "tools/zod.md"
+    }
+  ]
+}

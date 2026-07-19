@@ -1,0 +1,19 @@
+# Install as /etc/systemd/system/brai-user-storage-setup.service, root:root 0644.
+# This unit never creates or reformats storage. The explicit installer does
+# that once; every boot only re-verifies the immutable backing-file boundary.
+[Unit]
+Description=Verify Brai one-disk user storage backing
+DefaultDependencies=no
+After=local-fs-pre.target
+Before=srv-brai\x2duser\x2ddata.mount
+
+[Service]
+Type=oneshot
+ExecStart=/srv/opt/brai-agent-runtime/bin/status-user-storage --backing-only
+RemainAfterExit=yes
+UMask=0077
+NoNewPrivileges=yes
+# Do not add mount-namespace hardening such as ProtectSystem/PrivateTmp here:
+# this pre-local-fs verifier must run before the mount unit, and those settings
+# add local-fs dependencies that form an ordering cycle. The helper itself is
+# read-only, root-owned, fixed-path code and has no mutation action.

@@ -1,0 +1,13 @@
+[Unit]
+Description=Reconcile Brai New ADR static publication
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=1min
+AccuracySec=1s
+Persistent=true
+Unit=brai-adr-autopublish.service
+
+[Install]
+WantedBy=timers.target
+

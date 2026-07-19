@@ -1,0 +1,275 @@
+name: affected-delivery
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches:
+      - dev
+      - "release/**"
+  workflow_dispatch:
+    inputs:
+      bootstrap_dev:
+        description: Build a complete first dev manifest; use only from protected dev.
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: affected-delivery-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-plan:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    outputs:
+      delivery_class: ${{ steps.plan.outputs.delivery_class }}
+      requires_preview: ${{ steps.plan.outputs.requires_preview }}
+      requires_image_build: ${{ steps.plan.outputs.requires_image_build }}
+      build_matrix: ${{ steps.plan.outputs.build_matrix }}
+      revision: ${{ steps.revision.outputs.sha }}
+      branch: ${{ steps.revision.outputs.branch }}
+    steps:
+      - name: Checkout exact trusted revision and merge base
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pinned Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22.22.3
+          check-latest: false
+
+      - name: Activate pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.13.1 --activate
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve exact source revision and branch
+        id: revision
+        env:
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          echo "sha=${PR_SHA:-$GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "branch=${PR_BRANCH:-$GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Run only declared affected checks
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '0000000000000000000000000000000000000000' }}
+          HEAD_SHA: ${{ steps.revision.outputs.sha }}
+          BOOTSTRAP_DEV: ${{ inputs.bootstrap_dev }}
+        run: |
+          set -euo pipefail
+          if [[ "$BOOTSTRAP_DEV" == true ]]; then
+            pnpm run ci
+          else
+            node tools/ci/run-affected.mjs --base="$BASE_SHA" --head="$HEAD_SHA"
+          fi
+
+      - name: Compute delivery plan
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '0000000000000000000000000000000000000000' }}
+          HEAD_SHA: ${{ steps.revision.outputs.sha }}
+          BOOTSTRAP_DEV: ${{ inputs.bootstrap_dev }}
+        run: |
+          set -euo pipefail
+          if [[ "$BOOTSTRAP_DEV" == true ]]; then
+            node tools/ci/bootstrap-delivery-impact.mjs > impact.json
+          else
+            node tools/ci/delivery-impact.mjs --base="$BASE_SHA" --head="$HEAD_SHA" > impact.json
+          fi
+          node tools/ci/write-github-delivery-output.mjs < impact.json >> "$GITHUB_OUTPUT"
+
+      - name: Keep the tiny plan for image assembly
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: delivery-plan-${{ steps.revision.outputs.sha }}
+          path: impact.json
+          if-no-files-found: error
+          retention-days: 1
+
+  build-images:
+    needs: verify-and-plan
+    if: needs.verify-and-plan.outputs.requires_image_build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.verify-and-plan.outputs.build_matrix) }}
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.verify-and-plan.outputs.revision }}
+          persist-credentials: false
+
+      - name: Log into GHCR with this job's package-only token
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive immutable image reference
+        id: image
+        env:
+          IMAGE_NAME: ${{ matrix.image.image }}
+        run: |
+          set -euo pipefail
+          echo "reference=ghcr.io/${GITHUB_REPOSITORY,,}/brai-${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and publish just this affected image
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          push: true
+          tags: ${{ steps.image.outputs.reference }}:sha-${{ needs.verify-and-plan.outputs.revision }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Store only the published digest
+        env:
+          IMAGE_NAME: ${{ matrix.image.image }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mkdir -p digests
+          printf '%s\n' "$IMAGE_DIGEST" > "digests/${IMAGE_NAME}.digest"
+
+      - name: Upload the sub-kilobyte digest result
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-digest-${{ matrix.image.image }}-${{ needs.verify-and-plan.outputs.revision }}
+          path: digests/${{ matrix.image.image }}.digest
+          if-no-files-found: error
+          retention-days: 1
+
+  assemble-request:
+    needs: [verify-and-plan, build-images]
+    if: needs.verify-and-plan.outputs.requires_image_build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      request_available: ${{ steps.target.outputs.available }}
+      target: ${{ steps.target.outputs.target }}
+    steps:
+      - name: Checkout request writer only
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.verify-and-plan.outputs.revision }}
+          persist-credentials: false
+
+      - name: Download the plan and digest text files
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          pattern: "*-digest-*-${{ needs.verify-and-plan.outputs.revision }}"
+          path: digests
+          merge-multiple: true
+
+      - name: Download exact impact plan
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: delivery-plan-${{ needs.verify-and-plan.outputs.revision }}
+          path: plan
+
+      - name: Select an allowed delivery target
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BOOTSTRAP_DEV: ${{ inputs.bootstrap_dev }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == pull_request ]]; then
+            echo "target=preview" >> "$GITHUB_OUTPUT"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$REF_NAME" == dev || "$BOOTSTRAP_DEV" == true ]]; then
+            echo "target=dev" >> "$GITHUB_OUTPUT"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$REF_NAME" == release/* ]]; then
+            echo "target=preview" >> "$GITHUB_OUTPUT"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create constrained controller request
+        if: steps.target.outputs.available == 'true'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          BRAI_DELIVERY_REVISION: ${{ needs.verify-and-plan.outputs.revision }}
+        run: >-
+          node tools/ci/write-delivery-request.mjs
+          --impact=plan/impact.json
+          --digest-dir=digests
+          --target=${{ steps.target.outputs.target }}
+          --branch=${{ needs.verify-and-plan.outputs.branch }}
+          > delivery-request.json
+
+      - name: Keep the small signed-input candidate for diagnostics
+        if: steps.target.outputs.available == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: delivery-request-${{ needs.verify-and-plan.outputs.revision }}
+          path: delivery-request.json
+          if-no-files-found: error
+          retention-days: 1
+
+  deliver:
+    needs: [verify-and-plan, assemble-request]
+    if: >-
+      needs.assemble-request.outputs.request_available == 'true' &&
+      vars.BRAI_DELIVERY_ENDPOINT != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    environment: ${{ needs.assemble-request.outputs.target == 'dev' && 'development' || 'preview' }}
+    steps:
+      - name: Download exact controller request
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: delivery-request-${{ needs.verify-and-plan.outputs.revision }}
+
+      - name: Submit short-lived GitHub OIDC-authenticated request
+        env:
+          BRAI_DELIVERY_ENDPOINT: ${{ vars.BRAI_DELIVERY_ENDPOINT }}
+        run: |
+          set -euo pipefail
+          token_response=$(curl --fail-with-body --silent --show-error \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=brai-delivery")
+          oidc_token=$(node -e 'process.stdin.on("data", d => { const v = JSON.parse(d); if (!v.value) process.exit(1); process.stdout.write(v.value); })' <<<"$token_response")
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $oidc_token" \
+            --header "Content-Type: application/json" \
+            --data @delivery-request.json \
+            "$BRAI_DELIVERY_ENDPOINT/v1/request"

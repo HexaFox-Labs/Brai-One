@@ -1,0 +1,8 @@
+.cache/
+.next/
+out/
+node_modules/
+coverage/
+test-results/
+playwright-report/
+tsconfig.tsbuildinfo

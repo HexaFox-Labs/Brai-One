@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly backup_program=/srv/opt/brai-db-telegram-backup.sh
+readonly postgres_container=${BRAI_POSTGRES_CONTAINER:-supabase-db}
+readonly postgres_database=${BRAI_POSTGRES_DATABASE:-postgres}
+readonly postgres_user=${BRAI_POSTGRES_USER:-postgres}
+
+if [[ ${EUID} -ne 0 ]]; then
+  echo "pre-migration-backup must run as root through systemd" >&2
+  exit 1
+fi
+if [[ ! -f ${backup_program} || -L ${backup_program} || ! -x ${backup_program} ]]; then
+  echo "Brai backup program is not a regular executable file" >&2
+  exit 1
+fi
+backup_owner=$(stat --format='%u:%g' "${backup_program}")
+backup_mode=$(stat --format='%a' "${backup_program}")
+if [[ ${backup_owner} != "0:0" || $((8#${backup_mode} & 8#022)) -ne 0 ]]; then
+  echo "Brai backup program must be root-owned and non-writable" >&2
+  exit 1
+fi
+
+schema_output=$(
+  docker exec "${postgres_container}" \
+    psql \
+    -U "${postgres_user}" \
+    -d "${postgres_database}" \
+    --no-psqlrc \
+    --tuples-only \
+    --no-align \
+    --command="SELECT nspname FROM pg_namespace ORDER BY nspname"
+)
+
+declare -A existing_schemas=()
+while IFS= read -r schema; do
+  if [[ -n ${schema} ]]; then
+    existing_schemas["${schema}"]=1
+  fi
+done <<<"${schema_output}"
+
+filtered_schemas=()
+for schema in ${BRAI_BACKUP_SCHEMAS:-}; do
+  if [[ ! ${schema} =~ ^[a-z_][a-z0-9_]*$ ]]; then
+    echo "Invalid configured backup schema: ${schema}" >&2
+    exit 1
+  fi
+  if [[ -n ${existing_schemas[${schema}]:-} ]]; then
+    filtered_schemas+=("${schema}")
+  fi
+done
+if [[ ${#filtered_schemas[@]} -eq 0 ]]; then
+  echo "No configured backup schema exists" >&2
+  exit 1
+fi
+
+export BRAI_BACKUP_SCHEMAS="${filtered_schemas[*]}"
+# The shared host backup script has an optional legacy status hook guarded by
+# BRAI_DATABASE_URL. Production deployment must not execute code from the old
+# /srv/projects/brai checkout, so the fixed wrapper disables that hook.
+unset BRAI_DATABASE_URL
+exec "${backup_program}"

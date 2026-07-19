@@ -1,0 +1,23 @@
+# Reference for an exact, root-owned /etc/systemd/nspawn/brai-user-<id>.nspawn.
+# Replace the placeholder only from a verified server snapshot. Do not accept a
+# machine name, path, Bind=, image, or profile from a client or agent.
+[Exec]
+Boot=yes
+# Concrete files use a stable, provisioner-allocated START:131072 range from
+# the canonical 0x70000000..0x7FFDFFFF whole-host reservation.
+# `pick` is intentionally not used: the stable mapping also determines the
+# unique host UID of this slot's external rootless container engine.
+PrivateUsers=<trusted-userns-start>:131072
+PrivateUsersOwnership=map
+
+[Files]
+ReadOnly=yes
+# This is one project-quota directory inside the single shared
+# /srv/brai-storage/user-data.xfs loop-XFS pool. It is not a per-user image and
+# no agent/task gets another filesystem or source-tree clone.
+Bind=/srv/brai-user-data/<allocated-environment-name>:/data
+Bind=/run/brai-user-engines/<allocated-environment-name>:/run/user/1000
+
+[Network]
+Private=yes
+VirtualEthernet=yes

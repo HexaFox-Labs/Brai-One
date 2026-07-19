@@ -1,0 +1,43 @@
+schema: spec-driven
+
+context: |
+  This project accepts ordinary natural-language tasks. The agent runs internal
+  OpenSpec and docflow commands itself; never require the user to type /opsx:* or
+  openspec commands. Use the autonomous-dev-flow router when available.
+  OpenSpec Change and task-database context are independent work envelopes.
+  Change is optional unless the OpenSpec route is selected; DB-only work still
+  applies the same documentation, specification, ADR, evidence, and checks.
+  Run the compact project-local docflow runner before and after changes. It
+  selects quick, normal, or full checks from the task context and changed
+  surfaces. Do not run full CI for every edit; use it for full/CI/release work.
+  Permanent OpenSpec specs define required behavior, reader-facing docs describe
+  current behavior, ADRs preserve rationale, and Memory Bank is short handoff
+  context. Update only the relevant source of truth; never invent rationale or
+  rewrite OpenSpec to hide spec drift. Require an explicit no-ADR result when
+  no ADR is needed. If evidence is missing, leave the work context open.
+  Project policy, permanent specs, code/tests, and Memory Bank outrank generated
+  skills and proposal/design text. For access boundaries, synchronize
+  agent-access/spec.md and the matching work context. A generated skill being
+  unavailable must not block equivalent project-local commands. For code tasks,
+  follow the compact code-quality kernel in AGENTS.md, load
+  docs/reference/code-style.md, and run the repository format/lint/typecheck
+  checks appropriate to the route.
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours

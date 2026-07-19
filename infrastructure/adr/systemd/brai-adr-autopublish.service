@@ -1,0 +1,31 @@
+[Unit]
+Description=Brai New ADR automatic static publication
+Documentation=file:///srv/projects/brai-new/infrastructure/adr/README.md
+ConditionPathIsDirectory=/srv/projects/brai-new/docs/decisions
+ConditionPathIsDirectory=/srv/projects/brai-envs/prod/adr-brai-new
+
+[Service]
+Type=oneshot
+User=mark
+Group=mark
+WorkingDirectory=/srv/projects/brai-new
+Environment=BRAI_ADR_OPENSPEC_BIN=/srv/opt/node-v22.22.3/lib/node_modules/@fission-ai/openspec/bin/openspec.js
+ExecStart=/srv/opt/node-v22.22.3/bin/node /srv/projects/brai-new/infrastructure/adr/auto-publish.mjs
+UMask=0022
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=tmpfs
+# docs:check verifies the documented host-registry link; the registry contains
+# no credentials and is mounted read-only rather than exposing mark's home.
+BindReadOnlyPaths=/home/mark/DEPLOYMENT.md
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+# Log4brains/Next owns only this disposable renderer cache; source and all
+# other project paths remain read-only to the service.
+ReadWritePaths=/srv/projects/brai-envs/prod/adr-brai-new /srv/projects/brai-new/node_modules/.pnpm/@log4brains+web@1.1.0/node_modules/@log4brains/web/nextjs/.next-export
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=true
+CapabilityBoundingSet=

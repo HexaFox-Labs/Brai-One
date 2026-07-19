@@ -1,0 +1,15 @@
+[Unit]
+Description=Brai user-sandbox fail-closed network boundary
+DefaultDependencies=no
+Before=network-pre.target brai-user-sandbox@.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft -f /etc/nftables.d/brai-user-sandboxes.nft
+ExecStart=/usr/bin/systemctl reload systemd-networkd.service
+ExecReload=/usr/sbin/nft -f /etc/nftables.d/brai-user-sandboxes.nft
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

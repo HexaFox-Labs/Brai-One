@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Brai New code-intelligence health check every five minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Persistent=true
+Unit=brai-code-intelligence-health.service
+
+[Install]
+WantedBy=timers.target

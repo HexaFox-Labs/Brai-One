@@ -1,0 +1,44 @@
+{
+  "source": "openspec",
+  "changeId": "automate-adr-publication",
+  "route": "full",
+  "intent": "Исправить timezone-сдвиг date-only ADR в статическом Log4brains output и запретить будущие даты в публикуемом ADR source.",
+  "behaviorChanged": true,
+  "surfaces": ["code", "docs", "spec", "deployment"],
+  "files": [
+    "tools/docs/adr-check.mjs",
+    "tools/docs/normalize-adr-dates.mjs",
+    "tools/docs/normalize-adr-dates.test.mjs",
+    "tools/docs/build-adr.mjs",
+    "tools/docs/publish-adr.mjs",
+    "infrastructure/adr/auto-publish.mjs",
+    "tools/ci/run.mjs",
+    "openspec/specs/adr-publication/spec.md",
+    "infrastructure/adr/README.md",
+    "docs/reference/commands.md",
+    "memory-bank/activeContext.md",
+    "memory-bank/progress.md"
+  ],
+  "status": "complete",
+  "evidence": {
+    "tests": [
+      "node --test tools/docs/adr-date.test.mjs tools/docs/normalize-adr-dates.test.mjs",
+      "pnpm run adr:check",
+      "pnpm run docs:check",
+      "openspec validate automate-adr-publication --type change --strict"
+    ],
+    "production": "release autopublish-20260719050109742-1e0a606bf719; isolated Chrome DevTools verified Jul 19, 2026 and no Jul 20, 2026"
+  },
+  "docs": {
+    "status": "updated",
+    "links": ["infrastructure/adr/README.md", "docs/reference/commands.md"]
+  },
+  "spec": {
+    "status": "updated",
+    "links": ["openspec/specs/adr-publication/spec.md"]
+  },
+  "adr": {
+    "status": "not-required",
+    "reason": "Исправлен defect renderer-а и validation существующего ADR publication contract; новое архитектурное решение не принято."
+  }
+}

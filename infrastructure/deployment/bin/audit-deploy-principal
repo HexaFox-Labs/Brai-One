@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly deployment_root=/srv/opt/brai-new-deploy
+# shellcheck disable=SC1091
+source "${deployment_root}/lib/deploy-principal.sh"
+
+brai_deploy_require_root
+
+if [[ $# -gt 1 ||
+  (${1-} != "" && ${1-} != "active" && ${1-} != "inactive") ]]; then
+  echo "Usage: audit-deploy-principal [active|inactive]" >&2
+  exit 1
+fi
+
+state=${1-}
+if [[ -z ${state} ]]; then
+  state=$(brai_deploy_detect_state)
+fi
+
+case ${state} in
+  active)
+    brai_deploy_assert_active
+    ;;
+  inactive)
+    brai_deploy_assert_inactive
+    ;;
+esac
+
+printf 'deploy_principal=%s\n' "${state}"

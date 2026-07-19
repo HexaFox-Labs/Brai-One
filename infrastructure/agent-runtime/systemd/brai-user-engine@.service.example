@@ -1,0 +1,47 @@
+[Unit]
+Description=Brai isolated rootless container engine for %i
+Requires=brai-users.slice
+After=local-fs.target brai-users.slice
+PartOf=brai-user-sandbox@%i.service
+
+[Service]
+Type=simple
+Slice=brai-users.slice
+User=root
+Group=root
+EnvironmentFile=/etc/brai-agent-runtime/environments/%i.env
+ExecStartPre=/srv/opt/brai-agent-runtime/bin/status-user-storage
+ExecStartPre=/srv/opt/brai-agent-runtime/bin/prepare-user-engine %i
+ExecStart=/srv/opt/brai-agent-runtime/bin/run-user-engine %i
+ExecStartPost=/srv/opt/brai-agent-runtime/bin/check-user-engine %i
+Restart=on-failure
+RestartSec=2
+Delegate=yes
+KillMode=mixed
+TimeoutStartSec=120
+TimeoutStopSec=45
+MemoryMax=3G
+MemorySwapMax=1536M
+CPUQuota=150%
+TasksMax=1536
+IOWeight=100
+NoNewPrivileges=no
+PrivateUsers=no
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/brai-user-data/%i /run
+BindPaths=/srv/brai-user-data/%i:/data
+BindReadOnlyPaths=/srv/opt/brai-agent-runtime/share/user-engine-host-resolv.conf:/etc/resolv.conf
+InaccessiblePaths=/srv/projects /root /home /etc/caddy /etc/brai-agent-runtime/credentials /var/run/docker.sock /run/docker.sock
+IPAddressAllow=10.0.2.3/32
+IPAddressDeny=10.0.0.0/8
+IPAddressDeny=169.254.0.0/16
+IPAddressDeny=172.16.0.0/12
+IPAddressDeny=192.168.0.0/16
+IPAddressDeny=157.254.223.221/32
+IPAddressDeny=::/0
+LockPersonality=yes
+RestrictRealtime=yes
+
+# No [Install]: only the trusted sandbox unit may pull this engine in.

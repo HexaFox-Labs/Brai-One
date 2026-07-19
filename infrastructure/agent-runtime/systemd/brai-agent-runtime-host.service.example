@@ -1,0 +1,50 @@
+[Unit]
+Description=Brai trusted agent runtime host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/srv/opt/brai-agent-runtime
+EnvironmentFile=/etc/brai-agent-runtime/runtime-host.env
+LoadCredential=nats-password:/etc/brai-agent-runtime/credentials/nats-password
+LoadCredential=launch-contract-public-key.pem:/etc/brai-agent-runtime/credentials/launch-contract-public-key.pem
+LoadCredential=runtime-receipt-private-key.pem:/etc/brai-agent-runtime/credentials/runtime-receipt-private-key.pem
+ExecStart=/srv/opt/node-v22.22.3/bin/node /srv/opt/brai-agent-runtime/dist/runtime-host-main.bundle.js
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=30s
+UMask=0077
+
+StateDirectory=brai-agent-runtime
+StateDirectoryMode=0700
+RuntimeDirectory=brai-agent-runtime
+RuntimeDirectoryMode=0711
+
+NoNewPrivileges=no
+PrivateTmp=yes
+PrivateDevices=no
+PrivateUsers=no
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectControlGroups=no
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=no
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+# systemd-nspawn compares the host udev network namespace before creating a
+# private one; CAP_SYS_PTRACE is required to read that root-owned namespace.
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_FOWNER CAP_KILL CAP_MKNOD CAP_NET_ADMIN CAP_NET_RAW CAP_SETGID CAP_SETPCAP CAP_SETUID CAP_SYS_ADMIN CAP_SYS_CHROOT CAP_SYS_PTRACE
+AmbientCapabilities=
+ReadWritePaths=/run/brai-agent-runtime /var/lib/brai-agent-runtime /srv/brai-user-data /etc/brai-agent-runtime/environments
+
+[Install]
+WantedBy=multi-user.target

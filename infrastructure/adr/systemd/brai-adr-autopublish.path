@@ -1,0 +1,13 @@
+[Unit]
+Description=Watch Brai New ADR source for publication
+
+[Path]
+PathChanged=/srv/projects/brai-new/docs/decisions
+PathChanged=/srv/projects/brai-new/.log4brains.yml
+Unit=brai-adr-autopublish.service
+TriggerLimitIntervalSec=1min
+TriggerLimitBurst=20
+
+[Install]
+WantedBy=multi-user.target
+

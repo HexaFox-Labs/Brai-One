@@ -1,0 +1,23 @@
+[Match]
+Kind=veth
+Name=ve-brai-u-*
+
+[Network]
+# systemd-networkd allocates a collision-free /28 from its managed pool for
+# each point-to-point veth. Users never choose an address or subnet.
+Address=0.0.0.0/28
+DHCPServer=yes
+IPMasquerade=ipv4
+IPForward=ipv4
+LinkLocalAddressing=no
+IPv6AcceptRA=no
+IPv6SendRA=no
+LLDP=no
+EmitLLDP=no
+
+[DHCPServer]
+EmitDNS=yes
+DNS=1.1.1.1 1.0.0.1
+EmitRouter=yes
+DefaultLeaseTimeSec=1h
+MaxLeaseTimeSec=12h

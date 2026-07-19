@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly deployment_root=/srv/opt/brai-new-deploy
+readonly compose_file="${deployment_root}/compose.production.yml"
+readonly releases_root="${deployment_root}/releases"
+readonly runtime_services=(
+  brai-nats
+  brai-factory
+  brai-access
+  brai-api-gateway
+  brai-web
+)
+readonly all_images=(
+  brai-factory-admin
+  brai-access-admin
+  "${runtime_services[@]}"
+)
+readonly backup_service=brai-db-telegram-backup.service
+
+if [[ ${EUID} -ne 0 ]]; then
+  echo "deploy-release must run as root" >&2
+  exit 1
+fi
+
+if [[ $# -ne 1 || ! $1 =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Usage: deploy-release <full-git-sha>" >&2
+  exit 1
+fi
+
+readonly revision=$1
+readonly release_path="${releases_root}/${revision}"
+readonly image_environment="${release_path}/images.env"
+
+for protected_path in \
+  "${deployment_root}" \
+  "${deployment_root}/bin" \
+  "${deployment_root}/bin/receive-release.mjs" \
+  "${deployment_root}/bin/deploy-release" \
+  "${deployment_root}/bin/pre-migration-backup" \
+  "${compose_file}" \
+  "${release_path}" \
+  "${release_path}/manifest.json" \
+  "${image_environment}"
+do
+  if [[ ! -e ${protected_path} ]]; then
+    echo "Missing protected deployment path: ${protected_path}" >&2
+    exit 1
+  fi
+  path_owner=$(stat --format='%u:%g' "${protected_path}")
+  path_mode=$(stat --format='%a' "${protected_path}")
+  if [[ ${path_owner} != "0:0" || $((8#${path_mode} & 8#022)) -ne 0 ]]; then
+    echo "Unsafe deployment path ownership or mode: ${protected_path}" >&2
+    exit 1
+  fi
+done
+
+if ! grep -qx "BRAI_RELEASE_REVISION=${revision}" "${image_environment}"; then
+  echo "Release environment revision mismatch" >&2
+  exit 1
+fi
+
+mapfile -t image_lines < <(
+  grep -E '^BRAI_(WEB|API_GATEWAY|FACTORY|ACCESS|FACTORY_ADMIN|ACCESS_ADMIN|NATS)_IMAGE=' \
+    "${image_environment}"
+)
+if [[ ${#image_lines[@]} -ne 7 ]]; then
+  echo "Release environment must contain exactly seven image references" >&2
+  exit 1
+fi
+for image_line in "${image_lines[@]}"; do
+  if [[ ! ${image_line} =~ =ghcr\.io/[a-z0-9_.-]+/[a-z0-9_.-]+/brai-[a-z-]+@sha256:[0-9a-f]{64}$ ]]; then
+    echo "Release environment contains a non-digest image reference" >&2
+    exit 1
+  fi
+done
+
+exec 9>"/run/lock/brai-new-deploy.lock"
+if ! flock -n 9; then
+  echo "Another Brai deployment is already running" >&2
+  exit 1
+fi
+
+compose() {
+  docker compose \
+    --project-name brai-new \
+    --profile admin \
+    --env-file "$1" \
+    --file "${compose_file}" \
+    "${@:2}"
+}
+
+readonly current_link="${deployment_root}/current"
+readonly previous_link="${deployment_root}/previous"
+previous_release=
+if [[ -L ${current_link} ]]; then
+  previous_release=$(readlink -f "${current_link}")
+  if [[ ! ${previous_release} =~ ^${releases_root}/[0-9a-f]{40}$ ]]; then
+    echo "Current release link escapes the release store" >&2
+    exit 1
+  fi
+  if [[ ! -f ${previous_release}/images.env ]]; then
+    echo "Current release is incomplete" >&2
+    exit 1
+  fi
+elif [[ -e ${current_link} ]]; then
+  echo "Current release path is not a symbolic link" >&2
+  exit 1
+fi
+
+compose "${image_environment}" config --quiet
+compose "${image_environment}" pull --quiet "${all_images[@]}"
+
+backup_environment=$(systemctl show "${backup_service}" --property=Environment --value)
+if [[ ${backup_environment} != *"brai_factory"* || ${backup_environment} != *"brai_access"* ]]; then
+  echo "Backup service must include brai_factory and brai_access schemas" >&2
+  exit 1
+fi
+backup_command=$(systemctl show "${backup_service}" --property=ExecStart --value)
+if [[ ${backup_command} != *"${deployment_root}/bin/pre-migration-backup"* ]]; then
+  echo "Backup service must use the protected pre-migration wrapper" >&2
+  exit 1
+fi
+systemctl start "${backup_service}"
+
+# Migrations are transactional and must remain backward-compatible with the
+# immediately preceding application release. They complete before any runtime
+# container is replaced.
+compose "${image_environment}" run \
+  --rm \
+  --no-deps \
+  --pull never \
+  brai-factory-admin
+
+compose "${image_environment}" run \
+  --rm \
+  --no-deps \
+  --pull never \
+  brai-access-admin
+
+compose "${image_environment}" run \
+  --rm \
+  --no-deps \
+  --pull never \
+  brai-factory-admin \
+  node dist/provision-runtime-role.js
+
+compose "${image_environment}" run \
+  --rm \
+  --no-deps \
+  --pull never \
+  brai-factory-admin \
+  node dist/audit-runtime-role.js
+
+if ! compose "${image_environment}" up \
+  --detach \
+  --no-build \
+  --pull never \
+  --wait \
+  --wait-timeout 180 \
+  "${runtime_services[@]}"
+then
+  echo "New release failed health checks" >&2
+  if [[ -n ${previous_release} ]]; then
+    echo "Rolling runtime images back to the last healthy release" >&2
+    compose "${previous_release}/images.env" up \
+      --detach \
+      --no-build \
+      --pull never \
+      --wait \
+      --wait-timeout 180 \
+      "${runtime_services[@]}"
+    echo "Runtime image rollback completed" >&2
+  else
+    echo "No previously healthy digest release exists for rollback" >&2
+    compose "${image_environment}" rm \
+      --stop \
+      --force \
+      "${runtime_services[@]}"
+  fi
+  exit 1
+fi
+
+temporary_link="${deployment_root}/.current-${revision}-${BASHPID}"
+rm -f "${temporary_link}"
+ln -s "releases/${revision}" "${temporary_link}"
+if [[ -n ${previous_release} && ${previous_release} != "${release_path}" ]]; then
+  temporary_previous="${deployment_root}/.previous-${revision}-${BASHPID}"
+  rm -f "${temporary_previous}"
+  ln -s "releases/$(basename "${previous_release}")" "${temporary_previous}"
+  mv -Tf "${temporary_previous}" "${previous_link}"
+fi
+mv -Tf "${temporary_link}" "${current_link}"
+
+retained_previous_release=${previous_release}
+if [[ ${previous_release} == "${release_path}" && -L ${previous_link} ]]; then
+  retained_previous_release=$(readlink -f "${previous_link}")
+  if [[ ! ${retained_previous_release} =~ ^${releases_root}/[0-9a-f]{40}$ ]]; then
+    echo "Previous release link escapes the release store" >&2
+    exit 1
+  fi
+elif [[ ${previous_release} == "${release_path}" && -e ${previous_link} ]]; then
+  echo "Previous release path is not a symbolic link" >&2
+  exit 1
+fi
+
+declare -A retained_images=()
+for retained_environment in \
+  "${release_path}/images.env" \
+  "${retained_previous_release:+${retained_previous_release}/images.env}"
+do
+  if [[ -f ${retained_environment} ]]; then
+    while IFS='=' read -r key value; do
+      if [[ ${key} == BRAI_*_IMAGE ]]; then
+        retained_images["${value}"]=1
+      fi
+    done <"${retained_environment}"
+  fi
+done
+
+shopt -s nullglob
+for old_release in "${releases_root}"/[0-9a-f]*; do
+  if [[ ! ${old_release} =~ ^${releases_root}/[0-9a-f]{40}$ ]]; then
+    continue
+  fi
+  if [[ ${old_release} == "${release_path}" || ${old_release} == "${retained_previous_release}" ]]; then
+    continue
+  fi
+  old_environment="${old_release}/images.env"
+  cleanup_complete=true
+  if [[ -f ${old_environment} ]]; then
+    while IFS='=' read -r key value; do
+      if [[ ${key} != BRAI_*_IMAGE || -n ${retained_images[${value}]:-} ]]; then
+        continue
+      fi
+      if ! docker image rm "${value}" >/dev/null 2>&1; then
+        cleanup_complete=false
+      fi
+    done <"${old_environment}"
+  fi
+  if [[ ${cleanup_complete} == true ]]; then
+    rm -f "${old_release}/images.env" "${old_release}/manifest.json"
+    rmdir "${old_release}" 2>/dev/null || true
+  fi
+done
+
+echo "deployed_revision=${revision}"

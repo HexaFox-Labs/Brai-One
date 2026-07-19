@@ -1,0 +1,47 @@
+#!/usr/sbin/nft -f
+
+destroy table inet brai_user_sandboxes
+
+table inet brai_user_sandboxes {
+  chain sandbox_to_host {
+    type filter hook input priority -20; policy accept;
+
+    iifname "ve-brai-u-*" udp sport 68 udp dport 67 accept
+    iifname "ve-brai-u-*" ct state established,related accept
+    iifname "ve-brai-u-*" counter drop
+  }
+
+  chain sandbox_forward {
+    type filter hook forward priority -20; policy accept;
+
+    iifname "ve-brai-u-*" oifname "ve-brai-u-*" counter drop
+    iifname "ve-brai-u-*" meta nfproto ipv6 counter drop
+    iifname "ve-brai-u-*" ip daddr {
+      0.0.0.0/8,
+      10.0.0.0/8,
+      100.64.0.0/10,
+      127.0.0.0/8,
+      169.254.0.0/16,
+      172.16.0.0/12,
+      192.0.0.0/24,
+      192.0.2.0/24,
+      192.168.0.0/16,
+      198.18.0.0/15,
+      198.51.100.0/24,
+      203.0.113.0/24,
+      224.0.0.0/4,
+      240.0.0.0/4
+    } counter drop
+    iifname "ve-brai-u-*" ct state new,established,related accept
+    oifname "ve-brai-u-*" ct state established,related accept
+    oifname "ve-brai-u-*" counter drop
+  }
+
+  chain host_to_sandbox {
+    type filter hook output priority -20; policy accept;
+
+    oifname "ve-brai-u-*" udp sport 67 udp dport 68 accept
+    oifname "ve-brai-u-*" ct state established,related accept
+    oifname "ve-brai-u-*" counter drop
+  }
+}

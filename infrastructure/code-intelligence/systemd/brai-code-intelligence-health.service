@@ -1,0 +1,13 @@
+[Unit]
+Description=Brai New code-intelligence health and recovery check
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/srv/opt/node-v22.16.0/bin/node /srv/projects/brai-new/infrastructure/code-intelligence/healthcheck.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ReadOnlyPaths=/srv/projects/brai-new /srv/opt/graphify/state/brai-new
