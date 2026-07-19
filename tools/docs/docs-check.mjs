@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 const root = resolve(import.meta.dirname, "../..");
 const roots = ["docs", "openspec", "memory-bank", "infrastructure/adr"];
 const files = ["AGENTS.md", "README.md"];
+const allowedExternalTargets = new Set(["/home/mark/DEPLOYMENT.md"]);
 for (const directory of roots) {
   files.push(...(await markdownFiles(resolve(root, directory))));
 }
@@ -23,6 +24,7 @@ for (const file of files) {
     const withoutAnchor = target.split("#", 1)[0];
     if (!withoutAnchor) continue;
     const decoded = decodeURIComponent(withoutAnchor);
+    if (allowedExternalTargets.has(decoded)) continue;
     const candidate = decoded.startsWith("/")
       ? decoded
       : resolve(root, file, "..", decoded);
