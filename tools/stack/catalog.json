@@ -871,7 +871,10 @@
       "location": "Runtime `/srv/opt/graphify`; игнорируемый output `graphify-out/`; source units в `infrastructure/code-intelligence/systemd`.",
       "limitations": "Graphify намеренно не индексирует docs/OpenSpec/Memory Bank в этом проекте и не заменяет SocratiCode semantic search; штатный viewer не является обзорной бизнес-диаграммой.",
       "sources": [
-        { "label": "Graphify lifecycle source", "path": "infrastructure/code-intelligence" },
+        {
+          "label": "Graphify lifecycle source",
+          "path": "infrastructure/code-intelligence"
+        },
         { "label": "Project graph policy", "path": "AGENTS.md" }
       ],
       "verification": [
@@ -896,8 +899,14 @@
       "location": "Runtime `/srv/opt/socraticode`; supervisor и source units в `infrastructure/code-intelligence`; local Qdrant/Ollama остаются loopback-only.",
       "limitations": "Semantic search не заменяет structural graph, не публикуется через public port и зависит от работоспособности local embedding runtime; поиск запрещён до полного initial index.",
       "sources": [
-        { "label": "SocratiCode supervisor", "path": "infrastructure/code-intelligence/socraticode-supervisor.mjs" },
-        { "label": "Context artifact manifest", "path": ".socraticodecontextartifacts.json" }
+        {
+          "label": "SocratiCode supervisor",
+          "path": "infrastructure/code-intelligence/socraticode-supervisor.mjs"
+        },
+        {
+          "label": "Context artifact manifest",
+          "path": ".socraticodecontextartifacts.json"
+        }
       ],
       "verification": [
         "`systemctl status brai-socraticode.service`",

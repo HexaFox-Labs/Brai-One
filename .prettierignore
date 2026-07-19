@@ -1,4 +1,5 @@
-.codex/skills/openspec-*/
+.codex/
+.pnpm-store/
 .nx/
 **/.cache/
 **/coverage/

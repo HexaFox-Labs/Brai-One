@@ -1,4 +1,10 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 
@@ -27,8 +33,10 @@ const rebuild = spawnSync(
 process.stdout.write(rebuild.stdout);
 process.stderr.write(rebuild.stderr);
 if (rebuild.status !== 0) process.exit(rebuild.status ?? 1);
-if (!existsSync(graphHtml)) throw new Error(`Graphify did not create ${graphHtml}.`);
-if (!existsSync(vendorSource)) throw new Error(`Missing pinned viewer asset: ${vendorSource}.`);
+if (!existsSync(graphHtml))
+  throw new Error(`Graphify did not create ${graphHtml}.`);
+if (!existsSync(vendorSource))
+  throw new Error(`Missing pinned viewer asset: ${vendorSource}.`);
 
 const html = readFileSync(graphHtml, "utf8");
 if (!html.includes(remoteLibrary)) {
@@ -37,4 +45,7 @@ if (!html.includes(remoteLibrary)) {
 
 mkdirSync(dirname(vendorTarget), { recursive: true });
 copyFileSync(vendorSource, vendorTarget);
-writeFileSync(graphHtml, html.replaceAll(remoteLibrary, "/vendor/vis-network.min.js"));
+writeFileSync(
+  graphHtml,
+  html.replaceAll(remoteLibrary, "/vendor/vis-network.min.js"),
+);

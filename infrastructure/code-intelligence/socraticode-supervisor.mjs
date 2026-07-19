@@ -8,18 +8,27 @@ const stateFile = "/srv/opt/graphify/state/brai-new/socraticode-status.json";
 const intervalMs = 60_000;
 
 const load = (file) => import(pathToFileURL(resolve(dist, file)).href);
-const [config, docker, embeddings, indexer, artifacts, graph, watcher, qdrant, ollama] =
-  await Promise.all([
-    load("config.js"),
-    load("services/docker.js"),
-    load("services/embedding-provider.js"),
-    load("services/indexer.js"),
-    load("services/context-artifacts.js"),
-    load("services/code-graph.js"),
-    load("services/watcher.js"),
-    load("services/qdrant.js"),
-    load("services/ollama.js"),
-  ]);
+const [
+  config,
+  docker,
+  embeddings,
+  indexer,
+  artifacts,
+  graph,
+  watcher,
+  qdrant,
+  ollama,
+] = await Promise.all([
+  load("config.js"),
+  load("services/docker.js"),
+  load("services/embedding-provider.js"),
+  load("services/indexer.js"),
+  load("services/context-artifacts.js"),
+  load("services/code-graph.js"),
+  load("services/watcher.js"),
+  load("services/qdrant.js"),
+  load("services/ollama.js"),
+]);
 
 let running = false;
 let currentStatus = { phase: "starting" };
@@ -31,16 +40,23 @@ function report(message) {
 
 function writeStatus(status) {
   mkdirSync(dirname(stateFile), { recursive: true });
-  writeFileSync(stateFile, `${JSON.stringify({ checkedAt: new Date().toISOString(), ...status }, null, 2)}\n`);
+  writeFileSync(
+    stateFile,
+    `${JSON.stringify({ checkedAt: new Date().toISOString(), ...status }, null, 2)}\n`,
+  );
 }
 
 async function reconcile() {
   if (running) return true;
   running = true;
   try {
-    const projectId = JSON.parse(readFileSync(resolve(root, ".socraticode.json"), "utf8")).projectId;
+    const projectId = JSON.parse(
+      readFileSync(resolve(root, ".socraticode.json"), "utf8"),
+    ).projectId;
     if (!projectId || config.projectIdFromPath(root) !== projectId) {
-      throw new Error("SocratiCode project id does not match the committed configuration.");
+      throw new Error(
+        "SocratiCode project id does not match the committed configuration.",
+      );
     }
 
     await docker.ensureQdrantReady(report);
@@ -54,13 +70,15 @@ async function reconcile() {
     if (!info?.pointsCount || status !== "completed") {
       report("SocratiCode: resuming persistent index");
       const result = await indexer.indexProject(root, report);
-      if (result.cancelled) throw new Error("SocratiCode indexing was cancelled.");
+      if (result.cancelled)
+        throw new Error("SocratiCode indexing was cancelled.");
     } else {
       await indexer.updateProjectIndex(root, report);
     }
 
     const indexed = await artifacts.ensureArtifactsIndexed(root);
-    if (indexed.errors.length) throw new Error(indexed.errors.map((item) => item.error).join("; "));
+    if (indexed.errors.length)
+      throw new Error(indexed.errors.map((item) => item.error).join("; "));
     await graph.rebuildGraph(root);
     // SocratiCode's native watcher retriggers its own in-flight incremental
     // updates on this checkout. The serialized one-minute reconciler below is
