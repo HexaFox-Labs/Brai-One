@@ -64,7 +64,15 @@ describe("GitHub delivery workflow policy", () => {
     expect(delivery).toContain("id-token: write");
     expect(delivery).toContain("BRAI_DELIVERY_ENDPOINT");
     expect(delivery).toContain("make-images-public:");
-    expect(delivery).toContain("/user/packages/container/brai-${IMAGE_NAME}");
+    expect(delivery).toContain(
+      "GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}",
+    );
+    expect(delivery).toContain('package_name="${package_name//\\//%2F}"');
+    expect(delivery).toContain(
+      "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${package_name}",
+    );
+    expect(delivery).toContain("brai-delivery-manifest");
+    expect(delivery).not.toContain("/user/packages/container/");
     expect(delivery).not.toContain("pull_request_target");
     expect(cleanup).toContain("head.repo.full_name == github.repository");
     expect(cleanup).toContain("/v1/release");
