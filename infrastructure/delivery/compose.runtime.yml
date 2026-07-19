@@ -17,10 +17,11 @@ x-runtime-security: &runtime-security
 services:
   brai-postgres:
     <<: *runtime-security
-    # The official entrypoint prepares only its own named data volume before
-    # dropping to the postgres user; every other runtime service keeps no caps.
+    # The official entrypoint must search its 0700 named volume, prepare it,
+    # then drop to postgres; every other runtime service keeps no capabilities.
     cap_add:
       - CHOWN
+      - DAC_READ_SEARCH
       - FOWNER
       - SETGID
       - SETUID
