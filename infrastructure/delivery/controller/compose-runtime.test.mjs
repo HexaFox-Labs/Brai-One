@@ -77,8 +77,15 @@ test("preview Compose is source-free, isolated and binds only paired loopback po
     ["brai-api-gateway", "127.0.0.1", "3517"],
     ["brai-web", "127.0.0.1", "3417"],
   ]);
+  assert.deepEqual(
+    [...configuration.services["brai-postgres"].cap_add].sort(),
+    ["CHOWN", "FOWNER", "SETGID", "SETUID"],
+  );
   for (const service of Object.values(configuration.services)) {
     assert.equal(service.build, undefined);
+    if (service !== configuration.services["brai-postgres"]) {
+      assert.equal(service.cap_add, undefined);
+    }
     assert.equal(
       (service.volumes ?? []).some((volume) => volume.type === "bind"),
       false,

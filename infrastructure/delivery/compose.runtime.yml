@@ -17,6 +17,13 @@ x-runtime-security: &runtime-security
 services:
   brai-postgres:
     <<: *runtime-security
+    # The official entrypoint prepares only its own named data volume before
+    # dropping to the postgres user; every other runtime service keeps no caps.
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETGID
+      - SETUID
     image: ${BRAI_POSTGRES_IMAGE:?BRAI_POSTGRES_IMAGE must be immutable}
     container_name: ${BRAI_PREFIX}-brai-postgres
     environment:
