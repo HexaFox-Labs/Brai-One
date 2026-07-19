@@ -26,6 +26,10 @@ if [[ ${node_path} != /srv/opt/node-v22.22.3/bin/node ]]; then
   exit 1
 fi
 
+for controller_file in "${source_root}"/controller/*.mjs; do
+  node --check "${controller_file}"
+done
+
 install -d -o root -g root -m 0755 \
   "${install_root}" \
   "${install_root}/controller" \
@@ -83,7 +87,9 @@ fi
 BRAI_DELIVERY_CADDY_ROUTE_ROOT="${install_root}/caddy" \
   node "${install_root}/caddy/manage-delivery-route.mjs" --check
 systemctl daemon-reload
-systemctl enable --now brai-delivery.service brai-delivery-sweep.timer
+systemctl enable brai-delivery.service brai-delivery-sweep.timer
+systemctl restart brai-delivery.service
+systemctl start brai-delivery-sweep.timer
 systemctl --quiet is-active brai-delivery.service
 BRAI_DELIVERY_CADDY_ROUTE_ROOT="${install_root}/caddy" \
   node "${install_root}/caddy/manage-delivery-route.mjs" --apply
