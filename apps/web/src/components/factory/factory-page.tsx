@@ -159,7 +159,10 @@ export function FactoryPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+      <main
+        data-brai-preview-verification="terminal-manifest"
+        className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12"
+      >
         <div className="mb-7 sm:mb-9">
           <h1 className="text-3xl font-semibold tracking-[-0.045em] text-foreground sm:text-4xl">
             Brai Factory
