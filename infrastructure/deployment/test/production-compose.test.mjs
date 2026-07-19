@@ -1,7 +1,9 @@
 /* global process */
 
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { tmpdir } from "node:os";
 
 import { describe, expect, it } from "vitest";
 
@@ -21,29 +23,46 @@ const imageEnvironment = {
 };
 
 function loadCompose() {
-  const result = spawnSync(
-    "docker",
-    [
-      "compose",
-      "--profile",
-      "*",
-      "--file",
-      composeFile,
-      "config",
-      "--format",
-      "json",
-      "--no-env-resolution",
-    ],
-    {
-      cwd: deploymentRoot,
-      encoding: "utf8",
-      env: imageEnvironment,
-    },
-  );
-  if (result.status !== 0) {
-    throw new Error(result.stderr || "docker compose config failed");
+  const temporaryDirectory = mkdtempSync(resolve(tmpdir(), "brai-compose-"));
+  const testEnvFile = resolve(temporaryDirectory, "runtime.env");
+  const testComposeFile = resolve(temporaryDirectory, "compose.production.yml");
+
+  try {
+    writeFileSync(testEnvFile, "", { mode: 0o600 });
+    writeFileSync(
+      testComposeFile,
+      readFileSync(composeFile, "utf8").replaceAll(
+        /\/etc\/brai-new\/[^\s]+\.env/g,
+        testEnvFile,
+      ),
+      { mode: 0o600 },
+    );
+    const result = spawnSync(
+      "docker",
+      [
+        "compose",
+        "--profile",
+        "*",
+        "--file",
+        testComposeFile,
+        "config",
+        "--format",
+        "json",
+        "--no-env-resolution",
+      ],
+      {
+        cwd: deploymentRoot,
+        encoding: "utf8",
+        env: imageEnvironment,
+      },
+    );
+    if (result.status !== 0) {
+      throw new Error(result.stderr || "docker compose config failed");
+    }
+    return JSON.parse(result.stdout);
+  } finally {
+    rmSync(temporaryDirectory, { force: true, recursive: true });
   }
-  return JSON.parse(result.stdout);
 }
 
 describe("production Compose deployment", () => {
