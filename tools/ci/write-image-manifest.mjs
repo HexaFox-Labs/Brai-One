@@ -70,7 +70,7 @@ const images = Object.fromEntries(
       name,
       {
         digest,
-        reference: `${imageRoot}/brai-${name}@${digest}`,
+        reference: `${imageRoot}@${digest}`,
       },
     ];
   }),

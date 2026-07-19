@@ -31,7 +31,7 @@ test("reuses unchanged image digests from a verified base manifest", async () =>
         name,
         {
           digest,
-          reference: `ghcr.io/hexafox-labs/brai-one/brai-${name}@${digest}`,
+          reference: `ghcr.io/hexafox-labs/brai-one@${digest}`,
         },
       ];
     }),

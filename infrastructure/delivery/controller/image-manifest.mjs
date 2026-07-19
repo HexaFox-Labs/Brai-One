@@ -27,7 +27,7 @@ export function overlayManifest(
     if (!imageNames.includes(name) || !digestPattern.test(digest)) {
       throw new Error("Manifest overlay contains an invalid image digest");
     }
-    result[name] = `${imageRoot(repository)}/brai-${name}@${digest}`;
+    result[name] = `${imageRoot(repository)}@${digest}`;
   }
   const missing = imageNames.filter((name) => !(name in result));
   if (missing.length > 0) {
@@ -38,8 +38,7 @@ export function overlayManifest(
   for (const [name, reference] of Object.entries(result)) {
     if (
       !imageNames.includes(name) ||
-      reference !==
-        `${imageRoot(repository)}/brai-${name}@${referenceDigest(reference)}`
+      reference !== `${imageRoot(repository)}@${referenceDigest(reference)}`
     ) {
       throw new Error("Manifest contains an invalid immutable image reference");
     }

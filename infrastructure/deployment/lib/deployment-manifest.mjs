@@ -84,7 +84,7 @@ export function parseDeploymentManifest(source, expectedRepository) {
     if (typeof entry.digest !== "string" || !digestPattern.test(entry.digest)) {
       throw new Error(`Image ${name} does not have a sha256 digest`);
     }
-    const expectedReference = `${imageRoot}/brai-${name}@${entry.digest}`;
+    const expectedReference = `${imageRoot}@${entry.digest}`;
     if (entry.reference !== expectedReference) {
       throw new Error(
         `Image ${name} reference is not the expected GHCR digest`,

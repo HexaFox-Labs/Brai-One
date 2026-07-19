@@ -38,7 +38,7 @@ function validManifest() {
           name,
           {
             digest: imageDigest,
-            reference: `ghcr.io/brightos/brai-new/brai-${name}@${imageDigest}`,
+            reference: `ghcr.io/brightos/brai-new@${imageDigest}`,
           },
         ];
       }),
@@ -54,10 +54,10 @@ describe("immutable deployment manifest", () => {
     );
     expect(parsed.sourceRevision).toBe(revision);
     expect(renderDeploymentEnvironment(parsed)).toContain(
-      `BRAI_WEB_IMAGE=ghcr.io/brightos/brai-new/brai-web@${digest("1")}`,
+      `BRAI_WEB_IMAGE=ghcr.io/brightos/brai-new@${digest("1")}`,
     );
     expect(renderDeploymentEnvironment(parsed)).toContain(
-      `BRAI_ACCESS_IMAGE=ghcr.io/brightos/brai-new/brai-access@${digest("4")}`,
+      `BRAI_ACCESS_IMAGE=ghcr.io/brightos/brai-new@${digest("4")}`,
     );
   });
 
@@ -65,8 +65,7 @@ describe("immutable deployment manifest", () => {
     [
       "tag reference",
       (value) => {
-        value.images.web.reference =
-          "ghcr.io/brightos/brai-new/brai-web:latest";
+        value.images.web.reference = "ghcr.io/brightos/brai-new:latest";
       },
     ],
     [
