@@ -43,7 +43,7 @@ describe("GitHub delivery workflow policy", () => {
     expect(workflow).not.toContain("pull_request_target");
   });
 
-  it("binds preview delivery and cleanup to same-repository OIDC jobs only", async () => {
+  it("keeps OCI artifacts in one source-linked package and binds delivery to OIDC", async () => {
     const [delivery, cleanup, acceptance] = await Promise.all([
       readFile(
         resolve(workspaceRoot, ".github/workflows/delivery.yml"),
@@ -63,16 +63,16 @@ describe("GitHub delivery workflow policy", () => {
     ]);
     expect(delivery).toContain("id-token: write");
     expect(delivery).toContain("BRAI_DELIVERY_ENDPOINT");
-    expect(delivery).toContain("make-images-public:");
+    expect(delivery).toContain("needs: [verify-and-plan, build-images]");
     expect(delivery).toContain(
-      "GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}",
+      "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}",
     );
-    expect(delivery).toContain('package_name="${package_name//\\//%2F}"');
     expect(delivery).toContain(
-      "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${package_name}",
+      "${{ steps.image.outputs.reference }}:brai-${{ matrix.image.image }}-sha-",
     );
-    expect(delivery).toContain("brai-delivery-manifest");
-    expect(delivery).not.toContain("/user/packages/container/");
+    expect(delivery).toContain("brai-delivery-manifest-preview-${REVISION}");
+    expect(delivery).not.toContain("make-images-public:");
+    expect(delivery).not.toContain("/packages/container/");
     expect(delivery).not.toContain("pull_request_target");
     expect(cleanup).toContain("head.repo.full_name == github.repository");
     expect(cleanup).toContain("/v1/release");
