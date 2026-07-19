@@ -146,6 +146,22 @@ jobs receive only the explicit package or deployment permission needed. The
 production SSH key is exposed only to a protected production promotion job;
 the host deploy account accepts only the fixed manifest command.
 
+### Lifecycle authorization uses the published OIDC contract
+
+The preview cleanup and owner-acceptance endpoints bind a token to the expected
+repository, public visibility, exact workflow filename, event name and exact
+head branch; acceptance additionally binds the base branch to `dev`. They use
+only claims documented for GitHub Actions OIDC. In particular, GitHub's event
+payload field `action` is not an OIDC claim and MUST NOT become a controller
+requirement.
+
+The corresponding trusted workflow files constrain the activity themselves:
+`preview-cleanup.yml` listens only for closed pull requests and
+`enable-runtime-automerge.yml` only for submitted reviews. This preserves the
+least-privilege boundary without depending on an undocumented JWT shape. Unit
+tests use real-contract-shaped claims that deliberately omit `action` and still
+reject a different repository, workflow, event or branch.
+
 ## Risks / Trade-offs
 
 - [Incorrect dependency catalog under-starts a preview] → catalog validation,
@@ -163,6 +179,9 @@ the host deploy account accepts only the fixed manifest command.
 - [A post-deploy manifest step omits a target-specific prerequisite] → keep
   target-neutral authentication next to the shared terminal gate, assert it in
   the workflow policy test, and validate Dev plus a real Preview before merge.
+- [A lifecycle endpoint depends on an undocumented OIDC field] → bind it only
+  to documented claims, keep the narrow event activity in trusted workflow YAML
+  and test tokens that omit event-payload-only fields.
 
 ## Migration Plan
 

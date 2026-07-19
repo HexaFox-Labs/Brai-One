@@ -30,11 +30,7 @@ export function authorizeDelivery(claims, request) {
 /** @param {Record<string, unknown>} claims @param {string} branch */
 export function authorizePreviewRelease(claims, branch) {
   assertTrustedWorkflow(claims, "preview-cleanup.yml");
-  if (
-    claims.event_name !== "pull_request" ||
-    claims.action !== "closed" ||
-    claims.head_ref !== branch
-  ) {
+  if (claims.event_name !== "pull_request" || claims.head_ref !== branch) {
     throw new Error("OIDC token is not authorized for preview cleanup");
   }
 }
@@ -44,7 +40,6 @@ export function authorizePreviewStatus(claims, branch) {
   assertTrustedWorkflow(claims, "enable-runtime-automerge.yml");
   if (
     claims.event_name !== "pull_request_review" ||
-    claims.action !== "submitted" ||
     claims.head_ref !== branch ||
     claims.base_ref !== "dev"
   ) {

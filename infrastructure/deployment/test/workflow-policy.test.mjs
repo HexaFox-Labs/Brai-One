@@ -86,12 +86,14 @@ describe("GitHub delivery workflow policy", () => {
     expect(delivery).not.toContain("/packages/container/");
     expect(delivery).not.toContain("pull_request_target");
     expect(cleanup).toContain("head.repo.full_name == github.repository");
+    expect(cleanup).toContain("types: [closed]");
     expect(cleanup).toContain("/v1/release");
     expect(cleanup).not.toContain("actions/checkout");
     expect(cleanup).not.toContain("pull_request_target");
     expect(acceptance).toContain(
       "github.event.review.user.login == github.repository_owner",
     );
+    expect(acceptance).toContain("types: [submitted]");
     expect(acceptance).toContain("/v1/status?branch=");
     expect(acceptance).not.toContain("actions/checkout");
     expect(acceptance).not.toContain("pull_request_target");

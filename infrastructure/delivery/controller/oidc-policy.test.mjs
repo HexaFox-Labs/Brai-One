@@ -6,25 +6,32 @@ import {
   authorizePreviewStatus,
 } from "./oidc-policy.mjs";
 
-test("accepts cleanup only from the dedicated closed-PR workflow", () => {
+test("accepts cleanup from the dedicated closed-PR workflow without an action claim", () => {
   const claims = {
     repository: "HexaFox-Labs/Brai-One",
     repository_visibility: "public",
     workflow_ref:
       "HexaFox-Labs/Brai-One/.github/workflows/preview-cleanup.yml@refs/heads/dev",
     event_name: "pull_request",
-    action: "closed",
     head_ref: "feature/closed",
   };
   assert.doesNotThrow(() => authorizePreviewRelease(claims, "feature/closed"));
   assert.throws(() =>
-    authorizePreviewRelease({ ...claims, action: "opened" }, "feature/closed"),
+    authorizePreviewRelease(
+      { ...claims, event_name: "pull_request_review" },
+      "feature/closed",
+    ),
+  );
+  assert.throws(() =>
+    authorizePreviewRelease(
+      { ...claims, head_ref: "feature/other" },
+      "feature/closed",
+    ),
   );
 });
 
-test("permits status lookup only from the owner review workflow", () => {
+test("permits status lookup from the owner review workflow without an action claim", () => {
   const claims = {
-    action: "submitted",
     base_ref: "dev",
     event_name: "pull_request_review",
     head_ref: "feature/web-only",
@@ -35,4 +42,13 @@ test("permits status lookup only from the owner review workflow", () => {
   };
   assert.doesNotThrow(() => authorizePreviewStatus(claims, "feature/web-only"));
   assert.throws(() => authorizePreviewStatus(claims, "feature/other"));
+  assert.throws(() =>
+    authorizePreviewStatus({ ...claims, base_ref: "main" }, "feature/web-only"),
+  );
+  assert.throws(() =>
+    authorizePreviewStatus(
+      { ...claims, event_name: "pull_request" },
+      "feature/web-only",
+    ),
+  );
 });

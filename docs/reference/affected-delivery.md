@@ -165,6 +165,9 @@ GH_TOKEN="$(gh auth token)" node tools/github/verify-delivery-policy.mjs \
   `packages: write`, attestation и OIDC permissions.
 - Host проверяет issuer, audience, signature, repository, visibility,
   workflow filename, event/ref и строгую JSON-схему запроса.
+- Cleanup и owner acceptance используют только документированные GitHub Actions
+  OIDC claims; активности `closed` и `submitted` ограничены точными trusted
+  workflow triggers, а не несуществующим JWT-полем из event payload.
 - CI не передаёт host path, shell command, tag, URL контейнера или имя volume.
   Все такие значения controller выводит из фиксированного catalog и prefix.
 

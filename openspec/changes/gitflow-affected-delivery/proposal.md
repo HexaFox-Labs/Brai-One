@@ -14,6 +14,12 @@ not a complete delivery result by itself: the exact immutable preview manifest
 must be persisted in GHCR before the GitHub check can become green and the
 revision can be promoted.
 
+The same live validation found that preview cleanup and owner acceptance were
+incorrectly requiring the GitHub event-only `action` field as an OIDC claim.
+GitHub's OIDC token contract does not emit that field, so the trusted controller
+rejected legitimate workflow requests before it could release a slot or report
+an exact preview revision.
+
 ## What Changes
 
 - Add Git Flow branch, merge, acceptance and promotion rules for `dev`,
@@ -34,6 +40,9 @@ revision can be promoted.
 - Treat the exact GHCR manifest as a terminal requirement for both Dev and
   Preview/release delivery, with target-neutral registry authentication and a
   regression test for the workflow contract.
+- Authorize preview cleanup and owner acceptance only from documented GitHub
+  Actions OIDC claims, while retaining the narrow trusted workflow triggers
+  that select the `closed` and `submitted` activities.
 
 ## Capabilities
 
