@@ -81,6 +81,21 @@ prefix.
 The existing production manifest/host contract is retained and generalized;
 admin images are one-off migration tools, not long-lived preview services.
 
+### Terminal manifest persistence is target-neutral
+
+For a `dev`, `preview` or `release/*` delivery, the health-gated controller
+response is an intermediate success. The GitHub delivery check becomes green
+only after its job has authenticated to GHCR and persisted the exact returned
+manifest as the target's tiny OCI artifact. The login is therefore conditioned
+only on a deployed response, not on whether the target is `dev` or `preview`.
+
+If manifest publication fails after the controller has activated a healthy
+preview, the preview remains available at its last activated revision, but the
+workflow remains red. Native auto-merge consequently cannot merge it, and no
+release promotion can fetch a missing immutable manifest. A source-level
+workflow policy test asserts that the one GHCR login step precedes both
+manifest-publishing paths and applies to every deployed target.
+
 ### Preview slots are leased, deterministic and disposable
 
 The controller stores `branch`, `slot`, `lease_generation`, `last_deployed_sha`,
@@ -145,6 +160,9 @@ the host deploy account accepts only the fixed manifest command.
   DNS slots do not imply active leases.
 - [Cutover failure] → legacy remains untouched until a separate verified dev
   cutover; manifest rollback retains the last two healthy releases.
+- [A post-deploy manifest step omits a target-specific prerequisite] → keep
+  target-neutral authentication next to the shared terminal gate, assert it in
+  the workflow policy test, and validate Dev plus a real Preview before merge.
 
 ## Migration Plan
 
@@ -158,8 +176,9 @@ the host deploy account accepts only the fixed manifest command.
 4. Retire the legacy dev runtime in an owner-approved maintenance window,
    perform capacity baseline and move `dev.brai.one` atomically only after the
    new dev health checks pass.
-5. Enable five preview leases, verify a real feature branch, release candidate
-   and rollback, then enable production promotion from a protected release.
+5. Enable five preview leases, verify a real feature branch's HTTPS route,
+   terminal GHCR manifest, merge-triggered cleanup, release candidate and
+   rollback, then enable production promotion from a protected release.
 
 Rollback stops only the new prefixed containers/routes, restores the preceding
 manifest and leaves legacy paths untouched until the approved cutover has

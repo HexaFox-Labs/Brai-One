@@ -34,7 +34,10 @@ The system SHALL use `dev` as the integration branch, `release/*` as a frozen
 release-candidate branch and `main` as production history. Runtime changes MUST
 receive a green preview and explicit acceptance of the deployed revision before
 GitHub auto-merge can be enabled. Production MUST be promoted only by an
-explicit protected release action after release checks are green.
+explicit protected release action after release checks are green. A runtime
+delivery check SHALL remain green only after its health-gated controller result
+and exact target manifest have both been persisted; its job MUST authenticate
+to GHCR before publishing either Dev or Preview/release manifest.
 
 #### Scenario: Accepted feature revision merges to dev
 
@@ -42,6 +45,13 @@ explicit protected release action after release checks are green.
   remain green
 - **THEN** GitHub native auto-merge may merge that exact pull request to `dev`
 - **AND** the dev manifest deploys only affected image changes
+
+#### Scenario: Preview manifest persistence fails after a healthy deploy
+
+- **WHEN** a Preview/release controller deployment is healthy but its exact
+  manifest cannot be persisted in GHCR
+- **THEN** the delivery check fails and the revision cannot merge or promote
+- **AND** the already activated preview remains intact for diagnosis
 
 #### Scenario: Main receives an ordinary push
 
