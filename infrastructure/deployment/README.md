@@ -8,6 +8,8 @@ model, agent, plugin or policy broker in its decision path.
 The host-owned deployment root is `/srv/opt/brai-new-deploy`:
 
 - `compose.production.yml` has no `build` keys and no source bind mounts;
+- production containers are named `prod-brai-*`, isolated from legacy
+  `brai-*`, `d-brai-*` and `pNN-brai-*` runtime identities;
 - `releases/<git-sha>/manifest.json` and `images.env` are immutable inputs;
 - `current` points to the last release that passed all container healthchecks;
 - `previous` keeps the immediately preceding healthy digest set for an

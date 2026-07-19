@@ -8,6 +8,7 @@
 - [Команды проекта](commands.md)
 - [Микросервисная топология](microservice-topology.md)
 - [Стандарт исходного кода](code-style.md)
+- [Affected delivery и Git Flow](affected-delivery.md)
 - [Codebase intelligence: Graphify и SocratiCode](codebase-intelligence.md)
 - [Технологический стек](../stack/README.md)
 - [OpenSpec-контракты](../../openspec/specs/)

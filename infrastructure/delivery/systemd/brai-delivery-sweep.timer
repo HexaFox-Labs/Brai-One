@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Brai preview expiry and storage sweep
+
+[Timer]
+OnBootSec=10m
+OnUnitActiveSec=15m
+Persistent=true
+RandomizedDelaySec=2m
+
+[Install]
+WantedBy=timers.target

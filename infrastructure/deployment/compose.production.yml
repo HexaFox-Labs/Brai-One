@@ -1,4 +1,4 @@
-name: brai-new
+name: prod-brai
 
 x-runtime-security: &runtime-security
   restart: unless-stopped
@@ -18,7 +18,7 @@ services:
   brai-web:
     <<: *runtime-security
     image: ${BRAI_WEB_IMAGE:?BRAI_WEB_IMAGE must be an immutable digest reference}
-    container_name: brai-web
+    container_name: prod-brai-web
     ports:
       - target: 8080
         published: "3200"
@@ -43,7 +43,7 @@ services:
   brai-api-gateway:
     <<: *runtime-security
     image: ${BRAI_API_GATEWAY_IMAGE:?BRAI_API_GATEWAY_IMAGE must be an immutable digest reference}
-    container_name: brai-api-gateway
+    container_name: prod-brai-api-gateway
     env_file:
       - path: /etc/brai-new/gateway.env
         required: true
@@ -77,7 +77,7 @@ services:
   brai-nats:
     <<: *runtime-security
     image: ${BRAI_NATS_IMAGE:?BRAI_NATS_IMAGE must be an immutable digest reference}
-    container_name: brai-nats
+    container_name: prod-brai-nats
     command:
       - --config
       - /etc/nats/nats-server.conf
@@ -115,7 +115,7 @@ services:
   brai-factory:
     <<: *runtime-security
     image: ${BRAI_FACTORY_IMAGE:?BRAI_FACTORY_IMAGE must be an immutable digest reference}
-    container_name: brai-factory
+    container_name: prod-brai-factory
     env_file:
       - path: /etc/brai-new/factory.env
         required: true
@@ -138,7 +138,7 @@ services:
   brai-access:
     <<: *runtime-security
     image: ${BRAI_ACCESS_IMAGE:?BRAI_ACCESS_IMAGE must be an immutable digest reference}
-    container_name: brai-access
+    container_name: prod-brai-access
     env_file:
       - path: /etc/brai-new/access.env
         required: true
@@ -162,7 +162,7 @@ services:
     profiles:
       - admin
     image: ${BRAI_FACTORY_ADMIN_IMAGE:?BRAI_FACTORY_ADMIN_IMAGE must be an immutable digest reference}
-    container_name: brai-factory-admin
+    container_name: prod-brai-factory-admin
     env_file:
       - path: /etc/brai-new/migrations.env
         required: true
@@ -186,7 +186,7 @@ services:
     profiles:
       - admin
     image: ${BRAI_ACCESS_ADMIN_IMAGE:?BRAI_ACCESS_ADMIN_IMAGE must be an immutable digest reference}
-    container_name: brai-access-admin
+    container_name: prod-brai-access-admin
     env_file:
       - path: /etc/brai-new/access-migrations.env
         required: true
@@ -208,14 +208,14 @@ services:
 
 networks:
   brai-edge:
-    name: brai-edge
+    name: prod-brai-edge
     driver: bridge
   brai-bus:
-    name: brai-bus
+    name: prod-brai-bus
     driver: bridge
     internal: true
   brai-host-loopback:
-    name: brai-host-loopback
+    name: prod-brai-host-loopback
     driver: bridge
   brai-supabase:
     name: brai-supabase
@@ -223,4 +223,4 @@ networks:
 
 volumes:
   brai-nats-data:
-    name: brai-nats-data
+    name: prod-brai-nats-data

@@ -1,0 +1,30 @@
+[Unit]
+Description=Brai immutable dev and preview delivery controller
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+UMask=0077
+WorkingDirectory=/srv/opt/brai-delivery
+Environment=BRAI_DELIVERY_ROOT=/srv/opt/brai-delivery
+Environment=BRAI_DELIVERY_CONFIG=/etc/brai-delivery/controller.json
+ExecStart=/srv/opt/node-v22.22.3/bin/node /srv/opt/brai-delivery/controller/server.mjs
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/opt/brai-delivery
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

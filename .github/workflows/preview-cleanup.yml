@@ -1,0 +1,50 @@
+name: preview-cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+concurrency:
+  group: preview-cleanup-${{ github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release-preview-slot:
+    name: release-preview-slot
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      vars.BRAI_DELIVERY_ENDPOINT != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Submit a minimal close event to the loopback-only controller
+        env:
+          BRAI_DELIVERY_ENDPOINT: ${{ vars.BRAI_DELIVERY_ENDPOINT }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          token_response=$(curl --fail-with-body --silent --show-error \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=brai-delivery")
+          oidc_token=$(node -e 'process.stdin.on("data", d => { const v = JSON.parse(d); if (!v.value) process.exit(1); process.stdout.write(v.value); })' <<<"$token_response")
+          node -e '
+            process.stdout.write(JSON.stringify({
+              schema_version: "brai.delivery.request.v1",
+              operation: "release",
+              source_repository: process.env.GITHUB_REPOSITORY,
+              branch: process.env.BRANCH,
+            }));
+          ' > release-request.json
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $oidc_token" \
+            --header "Content-Type: application/json" \
+            --data @release-request.json \
+            "$BRAI_DELIVERY_ENDPOINT/v1/release"

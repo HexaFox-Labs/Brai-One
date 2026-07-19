@@ -58,6 +58,10 @@ describe("production Compose deployment", () => {
         expect(volume.type).not.toBe("bind");
       }
     }
+    expect(configuration.name).toBe("prod-brai");
+    for (const service of Object.values(configuration.services)) {
+      expect(service.container_name).toMatch(/^prod-brai-/u);
+    }
   });
 
   it("publishes only required loopback ports", () => {
