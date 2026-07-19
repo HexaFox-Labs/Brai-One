@@ -63,7 +63,7 @@
       "id": "developer-experience",
       "title": "Рабочая среда агента",
       "description": "Инструменты, которые делают повседневную инженерную работу агента быстрее и понятнее.",
-      "tools": ["rtk"]
+      "tools": ["graphify", "rtk", "socraticode"]
     },
     {
       "id": "browser",
@@ -466,6 +466,60 @@
         "relatedTools": ["nextjs", "tailwind-css", "nginx"]
       },
       "page": "tools/geist.md"
+    },
+    {
+      "id": "graphify",
+      "name": "Graphify",
+      "category": "developer-experience",
+      "kind": "code-graph",
+      "scope": "host-and-project",
+      "summary": "Локальный структурный граф кода и штатный интерактивный viewer для Brai New.",
+      "whatItIs": "Graphify извлекает AST-структуру и связи кода в навигационный knowledge graph.",
+      "purpose": "Даёт агентам компактную structural map до semantic retrieval и raw file reads.",
+      "usage": "Фоновый service обновляет code-only graph; agents используют graphify query/path/explain, а штатный viewer опубликован на protected codegraph.brai.one.",
+      "status": "installed",
+      "version": "0.9.20",
+      "location": "Runtime `/srv/opt/graphify`; игнорируемый output `graphify-out/`; source units в `infrastructure/code-intelligence/systemd`.",
+      "limitations": "Graphify намеренно не индексирует docs/OpenSpec/Memory Bank в этом проекте и не заменяет SocratiCode semantic search; штатный viewer не является обзорной бизнес-диаграммой.",
+      "sources": [
+        {
+          "label": "Graphify lifecycle source",
+          "path": "infrastructure/code-intelligence"
+        },
+        {
+          "label": "Project graph policy",
+          "path": "AGENTS.md"
+        }
+      ],
+      "verification": [
+        "`systemctl status brai-graphify-watch.service`",
+        "`graphify query \"<question>\"` from the project root",
+        "Authenticated HTTPS check of `https://codegraph.brai.one/graph.html`"
+      ],
+      "tags": ["codebase", "graph", "mcp", "agent-workflow"],
+      "details": {
+        "whatItIsDetailed": "Graphify строит локальный AST-граф из исходного кода: узлы соответствуют файлам и символам, а рёбра отражают обнаруженные связи. Его CLI возвращает маленькие релевантные подграфы, а сгенерированный самим Graphify HTML остаётся штатным viewer, без самописной замены интерфейса.",
+        "whyNeededDetailed": "В Brai New structural вопрос — где находится ответственность и как две части кода связаны — должен решаться до широкого чтения файлов. Graphify сокращает этот первый обход, а SocratiCode затем отдаёт точные semantic fragments; такой порядок не смешивает граф структуры с индексом документов.",
+        "whyThisTool": "Нужен локальный graph-first слой, который показывает structural relationships быстрее и компактнее полного поиска по checkout.",
+        "howItWorksHere": "Отдельный systemd watcher отбрасывает собственный `graphify-out/` и запускает штатный AST-only `graphify update` только при изменении кода. Renderer использует Graphify `cluster-only` и локально закреплённый официальный vis-network asset, после чего protected Caddy route отдаёт стандартный `graph.html`.",
+        "capabilities": [
+          "AST nodes и cross-file relationships",
+          "scoped query, path и explain CLI retrieval",
+          "MCP endpoint и protected штатный HTML viewer"
+        ],
+        "scenarios": [
+          "перед изменением найти структурный subgraph по задаче",
+          "проверить кратчайшую связь двух symbols или modules",
+          "посмотреть текущий Graphify viewer на protected subdomain"
+        ],
+        "commonMistakes": [
+          "принимать общий viewer за читабельную архитектурную диаграмму",
+          "добавлять документацию в code graph вместо SocratiCode context artifacts",
+          "обходить Graphify raw broad search при доступном healthy graph"
+        ],
+        "relatedTools": ["socraticode", "chrome-devtools", "caddy"]
+      },
+      "page": "tools/graphify.md"
     },
     {
       "id": "jose",
@@ -1501,6 +1555,60 @@
         "relatedTools": ["nodejs", "pnpm", "memory-bank"]
       },
       "page": "tools/rtk.md"
+    },
+    {
+      "id": "socraticode",
+      "name": "SocratiCode",
+      "category": "developer-experience",
+      "kind": "semantic-code-search",
+      "scope": "host-and-project",
+      "summary": "Локальный semantic index, context artifacts и dependency graph для Brai New.",
+      "whatItIs": "SocratiCode разбивает код и selected context artifacts на semantic chunks, хранит embeddings в локальном Qdrant и предоставляет MCP retrieval tools.",
+      "purpose": "Даёт агентам актуальные смысловые фрагменты кода и документации после Graphify structural discovery.",
+      "usage": "Persistent supervisor завершает/обновляет index, context artifacts и dependency graph; agents проверяют status перед semantic search и затем используют MCP tools.",
+      "status": "installed",
+      "version": "1.8.16",
+      "location": "Runtime `/srv/opt/socraticode`; supervisor и source units в `infrastructure/code-intelligence`; local Qdrant/Ollama остаются loopback-only.",
+      "limitations": "Semantic search не заменяет structural graph, не публикуется через public port и зависит от работоспособности local embedding runtime; поиск запрещён до полного initial index.",
+      "sources": [
+        {
+          "label": "SocratiCode supervisor",
+          "path": "infrastructure/code-intelligence/socraticode-supervisor.mjs"
+        },
+        {
+          "label": "Context artifact manifest",
+          "path": ".socraticodecontextartifacts.json"
+        }
+      ],
+      "verification": [
+        "`systemctl status brai-socraticode.service`",
+        "SocratiCode `codebase_status` reports completed index and active watcher",
+        "SocratiCode `codebase_search` returns a current project fragment"
+      ],
+      "tags": ["codebase", "semantic-search", "embeddings", "mcp"],
+      "details": {
+        "whatItIsDetailed": "SocratiCode — это локальный MCP-слой семантического поиска по исходникам и выбранным context artifacts. Он создаёт embeddings через локальный runtime, хранит vectors в Qdrant и дополнительно строит dependency graph, поэтому агент получает не только совпадение строки, но и релевантный фрагмент с контекстом.",
+        "whyNeededDetailed": "Graphify хорошо отвечает на вопрос о структуре, но не предназначен для полнотекстовой документации и точных актуальных фрагментов. SocratiCode закрывает этот второй шаг: он хранит docs/OpenSpec/Memory Bank как явные artifacts и позволяет retrieve после того, как структурный слой сузил область поиска.",
+        "whyThisTool": "Нужен уже принятый в предыдущем проекте semantic layer, который не дублирует Graphify, а дополняет его current snippets и documentation context.",
+        "howItWorksHere": "Проектный supervisor продолжает checkpointed index после restart, затем индексирует context artifacts, rebuilds dependency graph и держит SocratiCode watcher. Он использует local-only Qdrant/Ollama, а health timer контролирует liveness и freshness, не открывая новых inbound ports.",
+        "capabilities": [
+          "semantic code and context-artifact search",
+          "persistent incremental index и filesystem watcher",
+          "dependency graph, impact и flow MCP tools"
+        ],
+        "scenarios": [
+          "получить актуальный implementation fragment по natural-language вопросу",
+          "найти OpenSpec или Memory Bank context после Graphify discovery",
+          "проверить impact и dependency graph перед refactor"
+        ],
+        "commonMistakes": [
+          "делать search до `codebase_status` completed",
+          "включать Qdrant или Ollama в публичный ingress",
+          "использовать SocratiCode вместо Graphify для первого structural map"
+        ],
+        "relatedTools": ["graphify", "docker-compose", "nodejs"]
+      },
+      "page": "tools/socraticode.md"
     },
     {
       "id": "supabase-postgresql",

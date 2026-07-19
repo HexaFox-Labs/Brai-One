@@ -72,7 +72,9 @@
 
 Инструменты, которые делают повседневную инженерную работу агента быстрее и понятнее.
 
+- [Graphify](tools/graphify.md) — Локальный структурный граф кода и штатный интерактивный viewer для Brai New.
 - [RTK](tools/rtk.md) — Сокращает шумный shell output, чтобы агент видел главное и тратил меньше контекста.
+- [SocratiCode](tools/socraticode.md) — Локальный semantic index, context artifacts и dependency graph для Brai New.
 
 ## Браузер и визуальная проверка
 

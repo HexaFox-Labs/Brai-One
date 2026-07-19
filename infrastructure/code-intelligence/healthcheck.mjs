@@ -3,7 +3,8 @@ import { spawnSync } from "node:child_process";
 
 const now = Date.now();
 const graphifyStatus = "/srv/opt/graphify/state/brai-new/status.json";
-const socratiStatus = "/srv/opt/graphify/state/brai-new/socraticode-status.json";
+const socratiStatus =
+  "/srv/opt/graphify/state/brai-new/socraticode-status.json";
 const services = [
   "brai-graphify-watch.service",
   "brai-graphify-view.service",
@@ -12,13 +13,18 @@ const services = [
 ];
 
 function active(unit) {
-  return spawnSync("/bin/systemctl", ["is-active", "--quiet", unit]).status === 0;
+  return (
+    spawnSync("/bin/systemctl", ["is-active", "--quiet", unit]).status === 0
+  );
 }
 
 function restart(unit, reason) {
   console.error(`${unit}: ${reason}; restarting`);
-  const result = spawnSync("/bin/systemctl", ["restart", unit], { encoding: "utf8" });
-  if (result.status !== 0) throw new Error(result.stderr || `restart exited ${result.status}`);
+  const result = spawnSync("/bin/systemctl", ["restart", unit], {
+    encoding: "utf8",
+  });
+  if (result.status !== 0)
+    throw new Error(result.stderr || `restart exited ${result.status}`);
 }
 
 function readFreshStatus(path, maxAgeMs, expectedPhases) {
@@ -30,8 +36,10 @@ function readFreshStatus(path, maxAgeMs, expectedPhases) {
     return `invalid status file ${path}`;
   }
   const timestamp = Date.parse(status.lastProgressAt ?? status.checkedAt ?? "");
-  if (!Number.isFinite(timestamp) || now - timestamp > maxAgeMs) return "status is stale";
-  if (status.ok === false || !expectedPhases.includes(status.phase)) return status.error ?? `phase ${status.phase}`;
+  if (!Number.isFinite(timestamp) || now - timestamp > maxAgeMs)
+    return "status is stale";
+  if (status.ok === false || !expectedPhases.includes(status.phase))
+    return status.error ?? `phase ${status.phase}`;
   return null;
 }
 
@@ -42,7 +50,10 @@ for (const unit of services) {
 const graphifyProblem = readFreshStatus(graphifyStatus, 15 * 60_000, ["ready"]);
 if (graphifyProblem) restart("brai-graphify-watch.service", graphifyProblem);
 
-const socratiProblem = readFreshStatus(socratiStatus, 30 * 60_000, ["indexing", "ready"]);
+const socratiProblem = readFreshStatus(socratiStatus, 30 * 60_000, [
+  "indexing",
+  "ready",
+]);
 if (socratiProblem) restart("brai-socraticode.service", socratiProblem);
 
 console.log("Code-intelligence health check passed.");
