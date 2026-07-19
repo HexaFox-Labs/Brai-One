@@ -108,3 +108,26 @@ delivery workflows SHALL use least-privilege tokens and protected environments.
 - **WHEN** a pull request head repository differs from the primary repository
 - **THEN** no internal CI job executes project code for that event
 - **AND** no secret, preview, package write or deploy path is reachable
+
+### Requirement: Preview lifecycle authorization uses documented OIDC claims
+
+The controller SHALL authorize preview cleanup and owner acceptance only from
+documented GitHub Actions OIDC claims: repository, repository visibility,
+workflow reference, event name, head branch and, for acceptance, base branch.
+It MUST NOT require GitHub event-payload-only fields that are absent from an
+OIDC token. The exact trusted cleanup and acceptance workflow triggers MUST
+constrain their respective closed-pull-request and submitted-review activities.
+
+#### Scenario: Closed pull request releases its preview with a normal OIDC token
+
+- **WHEN** the trusted cleanup workflow receives a GitHub OIDC token without an
+  `action` claim for a closed primary-repository pull request
+- **THEN** the controller accepts the branch-bound release request
+- **AND** it releases only that branch's current lease
+
+#### Scenario: A differently scoped token requests lifecycle access
+
+- **WHEN** a token has a different repository, workflow, event, head branch or
+  acceptance base branch
+- **THEN** the controller rejects the request before changing preview state or
+  reporting an acceptance status
