@@ -21,3 +21,17 @@ invoke a host deployment command.
   or deployment work
 - **THEN** the request is rejected before credential material is available
 - **AND** no host command is invoked
+
+### Requirement: Initial Access foundation precedes migration-role provisioning
+
+The delivery controller SHALL run the checked-in one-time Access foundation
+with its bootstrap credential before it creates or logs into the bounded Access
+migrator. This ordered step applies only to a fresh Dev or preview database.
+
+#### Scenario: New preview restores a Dev data snapshot
+
+- **WHEN** the controller initializes a new preview database from the data-only
+  snapshot
+- **THEN** it recreates the Access foundation and checksum ledger before
+  provisioning, passwording and auditing preview-local Access migration roles
+- **AND** the preview remains unavailable if the foundation step fails

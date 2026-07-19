@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
+import { createWriteStream } from "node:fs";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import { imageNames } from "./constants.mjs";
-import { DockerRuntime } from "./docker-runtime.mjs";
+import { DockerRuntime, streamProcess } from "./docker-runtime.mjs";
 import { createRuntimeSecrets } from "./runtime-config.mjs";
 
 const digest = `sha256:${"a".repeat(64)}`;
@@ -45,6 +46,63 @@ test("uses fixed Compose arguments and writes root-private per-slot config", asy
   );
 });
 
+test("initial runtime creates the Access foundation before its least-privilege roles", async () => {
+  const root = await mkdtemp(join(tmpdir(), "brai-runtime-initial-"));
+  const calls = [];
+  const runtime = new DockerRuntime({
+    root,
+    composeFile: "/fixed/compose.runtime.yml",
+    execute: async (command, argumentsList) =>
+      calls.push([command, argumentsList]),
+  });
+
+  await runtime.deploy({
+    prefix: "d",
+    manifest,
+    changedImages: Object.fromEntries(imageNames.map((name) => [name, digest])),
+    initial: true,
+    secrets: createRuntimeSecrets(),
+  });
+
+  const commandIndex = (service, script) =>
+    calls.findIndex(
+      ([, args]) => args.includes(service) && args.includes(script),
+    );
+  const factoryAudit = commandIndex(
+    "brai-factory-admin",
+    "dist/audit-runtime-role.js",
+  );
+  const accessFoundation = commandIndex(
+    "brai-access-admin",
+    "dist/bootstrap-foundation.js",
+  );
+  const accessMigrator = commandIndex(
+    "brai-access-admin",
+    "dist/bootstrap-migration-role.js",
+  );
+  const accessMigratorProvision = commandIndex(
+    "brai-access-admin",
+    "dist/provision-migration-role.js",
+  );
+  const accessMigratorAudit = commandIndex(
+    "brai-access-admin",
+    "dist/audit-migration-role.js",
+  );
+  const accessMigrations = commandIndex("brai-access-admin", "dist/migrate.js");
+  const accessRuntimeProvision = commandIndex(
+    "brai-access-admin",
+    "dist/provision-runtime-role.js",
+  );
+
+  assert.ok(factoryAudit >= 0);
+  assert.ok(accessFoundation > factoryAudit);
+  assert.ok(accessMigrator > accessFoundation);
+  assert.ok(accessMigratorProvision > accessMigrator);
+  assert.ok(accessMigratorAudit > accessMigratorProvision);
+  assert.ok(accessMigrations > accessMigratorAudit);
+  assert.ok(accessRuntimeProvision > accessMigrations);
+});
+
 test("measures only the controller-owned slot volumes", async () => {
   const runtime = new DockerRuntime({
     root: "/runtime",
@@ -56,4 +114,18 @@ test("measures only the controller-owned slot volumes", async () => {
     },
   });
   assert.equal(await runtime.slotStorageBytes("p01"), 2 * 1024 * 1024);
+});
+
+test("streams a snapshot child output into a file without passing a stream as stdio", async () => {
+  const root = await mkdtemp(join(tmpdir(), "brai-stream-process-"));
+  const destination = join(root, "snapshot.dump");
+  const output = createWriteStream(destination);
+
+  await streamProcess(
+    process.execPath,
+    ["-e", "process.stdout.write('immutable-snapshot')"],
+    { stdout: output },
+  );
+
+  assert.equal(await readFile(destination, "utf8"), "immutable-snapshot");
 });

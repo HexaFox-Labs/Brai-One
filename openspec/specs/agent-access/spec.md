@@ -214,11 +214,25 @@ migration/runtime roles. Gateway, web, models and user sandboxes MUST NOT
 receive core database credentials. Migration and runtime roles SHALL be
 auditable for exact grants, connection limits and server-side timeouts.
 
+For a fresh database, the one-time service foundation migration SHALL run with
+its protected bootstrap credential before a bounded migration role is created
+or used. Application containers SHALL remain unavailable if this sequence or a
+role-isolation audit fails.
+
 #### Scenario: Access service runs normally
 
 - **WHEN** `brai-access` connects to Supabase
 - **THEN** its runtime role can use only the required `brai_access` objects
 - **AND** it cannot create schemas, roles, extensions or migrations
+
+#### Scenario: Fresh delivery initializes Access
+
+- **WHEN** a fresh Dev or preview database is initialized
+- **THEN** the one-time Access foundation runs before the bounded
+  `brai_access_migrator` is provisioned
+- **AND** its local login password and role audit complete before it executes
+  checked-in migrations
+- **AND** runtime containers do not start if the foundation or role audit fails
 
 ### Requirement: Access capability is accepted only by live boundary tests
 

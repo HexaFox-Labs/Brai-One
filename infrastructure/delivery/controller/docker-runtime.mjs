@@ -96,6 +96,7 @@ export class DockerRuntime {
       ]);
     }
     if (needsFactoryMigration) await this.runFactoryMigration(compose);
+    if (input.initial) await this.runAccessFoundation(compose);
     if (needsAccessMigration) await this.runAccessMigration(compose);
     if (input.initial && input.restoreSnapshot)
       await this.restoreSnapshot(input.prefix);
@@ -297,12 +298,27 @@ export class DockerRuntime {
   }
 
   /** @param {string[]} compose */
+  async runAccessFoundation(compose) {
+    await this.compose(compose, [
+      "run",
+      "--rm",
+      "--no-deps",
+      "--pull",
+      "never",
+      "brai-access-admin",
+      "node",
+      "dist/bootstrap-foundation.js",
+    ]);
+  }
+
+  /** @param {string[]} compose */
   async runAccessMigration(compose) {
     for (const command of [
       ["brai-access-admin", "node", "dist/bootstrap-migration-role.js"],
+      ["brai-access-admin", "node", "dist/provision-migration-role.js"],
+      ["brai-access-admin", "node", "dist/audit-migration-role.js"],
       ["brai-access-admin", "node", "dist/migrate.js"],
       ["brai-access-admin", "node", "dist/provision-runtime-role.js"],
-      ["brai-access-admin", "node", "dist/audit-migration-role.js"],
       ["brai-access-admin", "node", "dist/audit-runtime-role.js"],
     ]) {
       await this.compose(compose, [
@@ -391,24 +407,62 @@ function executeOutput(command, argumentsList) {
 }
 
 /** @param {string} command @param {string[]} argumentsList @param {{ stdin?: import("node:stream").Readable; stdout?: import("node:stream").Writable }} streams */
-function streamProcess(command, argumentsList, streams) {
+export function streamProcess(command, argumentsList, streams) {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(command, argumentsList, {
-      stdio: [streams.stdin ?? "ignore", streams.stdout ?? "ignore", "pipe"],
+      stdio: [
+        streams.stdin ? "pipe" : "ignore",
+        streams.stdout ? "pipe" : "ignore",
+        "pipe",
+      ],
     });
     let standardError = "";
+    let processComplete = false;
+    let outputComplete = streams.stdout === undefined;
+    let settled = false;
+
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      child.kill();
+      reject(error);
+    };
+    const succeed = () => {
+      if (!settled && processComplete && outputComplete) {
+        settled = true;
+        resolvePromise();
+      }
+    };
+
+    if (streams.stdin) {
+      streams.stdin.once("error", fail);
+      child.stdin?.once("error", fail);
+      streams.stdin.pipe(child.stdin);
+    }
+    if (streams.stdout) {
+      streams.stdout.once("error", fail);
+      child.stdout?.once("error", fail);
+      streams.stdout.once("finish", () => {
+        outputComplete = true;
+        succeed();
+      });
+      child.stdout?.pipe(streams.stdout);
+    }
     child.stderr?.on("data", (chunk) => {
       standardError = `${standardError}${chunk}`.slice(-4000);
     });
-    child.once("error", reject);
+    child.once("error", fail);
     child.once("exit", (code, signal) => {
-      if (code === 0) resolvePromise();
-      else
-        reject(
+      if (code === 0) {
+        processComplete = true;
+        succeed();
+      } else {
+        fail(
           new Error(
             `Host command failed (${signal ?? String(code)}): ${standardError.trim()}`,
           ),
         );
+      }
     });
   });
 }
