@@ -79,7 +79,7 @@ test("preview Compose is source-free, isolated and binds only paired loopback po
   ]);
   assert.deepEqual(
     [...configuration.services["brai-postgres"].cap_add].sort(),
-    ["CHOWN", "FOWNER", "SETGID", "SETUID"],
+    ["CHOWN", "DAC_READ_SEARCH", "FOWNER", "SETGID", "SETUID"],
   );
   for (const service of Object.values(configuration.services)) {
     assert.equal(service.build, undefined);

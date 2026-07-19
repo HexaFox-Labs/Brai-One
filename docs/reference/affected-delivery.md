@@ -129,9 +129,10 @@ Dev/preview.
 
 Все runtime-контейнеры сохраняют read-only root filesystem, `cap_drop: ALL` и
 `no-new-privileges`. Единственное узкое исключение — PostgreSQL получает
-`CHOWN`, `FOWNER`, `SETGID`, `SETUID` только для первичной инициализации своего
-named volume и перехода к пользователю `postgres`; оно не даёт доступ к host
-filesystem, Docker socket или сети host.
+`CHOWN`, `DAC_READ_SEARCH`, `FOWNER`, `SETGID`, `SETUID` только для поиска и
+первичной инициализации собственного named volume с правами `0700`, а также
+перехода к пользователю `postgres`; оно не даёт доступа к host filesystem,
+Docker socket или сети host.
 
 Проверки службы:
 
