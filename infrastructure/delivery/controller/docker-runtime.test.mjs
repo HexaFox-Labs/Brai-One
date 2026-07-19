@@ -6,7 +6,11 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { imageNames } from "./constants.mjs";
-import { DockerRuntime, streamProcess } from "./docker-runtime.mjs";
+import {
+  DockerRuntime,
+  snapshotDumpArguments,
+  streamProcess,
+} from "./docker-runtime.mjs";
 import { createRuntimeSecrets } from "./runtime-config.mjs";
 
 const digest = `sha256:${"a".repeat(64)}`;
@@ -171,4 +175,15 @@ test("streams a snapshot child output into a file without passing a stream as st
   );
 
   assert.equal(await readFile(destination, "utf8"), "immutable-snapshot");
+});
+
+test("omits migration-owned policy from a Dev data snapshot", () => {
+  const argumentsList = snapshotDumpArguments("d", "test-password");
+
+  assert.ok(
+    argumentsList.includes("--exclude-table=brai_access.allocation_policies"),
+  );
+  assert.ok(argumentsList.includes("--data-only"));
+  assert.ok(argumentsList.includes("--schema=brai_factory"));
+  assert.ok(argumentsList.includes("--schema=brai_access"));
 });

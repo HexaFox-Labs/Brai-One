@@ -98,8 +98,9 @@ or overwrite a newer lease generation.
 
 There are twenty persistent empty database identities, one per slot. Allocating
 a slot restores the latest verified compressed `dev` snapshot, excluding
-attachments, file objects, logs and caches; branch migrations then apply only
-to that slot. A new snapshot atomically replaces the prior snapshot after a
+attachments, file objects, logs, caches, migration ledgers and immutable
+migration-owned seed records; branch migrations recreate those seeds before
+the remaining runtime data is restored to that slot. A new snapshot atomically replaces the prior snapshot after a
 healthy runtime dev deployment. Each preview has an isolated Docker network,
 named containers `pNN-brai-*`, Caddy route and scoped credentials. It reuses
 the immutable images of the minimum runtime closure but never network-connects
