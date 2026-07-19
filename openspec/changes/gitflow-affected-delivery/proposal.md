@@ -9,6 +9,11 @@ The public Brai repository needs a Git Flow delivery model that is fast by
 default, preserves strict trust boundaries, and creates preview environments
 only when a runtime change actually needs one.
 
+A real preview validation also showed that a healthy controller deployment is
+not a complete delivery result by itself: the exact immutable preview manifest
+must be persisted in GHCR before the GitHub check can become green and the
+revision can be promoted.
+
 ## What Changes
 
 - Add Git Flow branch, merge, acceptance and promotion rules for `dev`,
@@ -26,13 +31,17 @@ only when a runtime change actually needs one.
   workflows, obtain secrets, create previews or deploy.
 - Replace the current automatic production deployment from every `main` push
   with an explicit, accepted release promotion.
+- Treat the exact GHCR manifest as a terminal requirement for both Dev and
+  Preview/release delivery, with target-neutral registry authentication and a
+  regression test for the workflow contract.
 
 ## Capabilities
 
 ### New Capabilities
 
 - `gitflow-affected-delivery`: Fast, deterministic Git Flow CI/CD, preview
-  lifecycle, image promotion and capacity-aware cleanup for Brai.
+  lifecycle, image promotion, terminal immutable-manifest persistence and
+  capacity-aware cleanup for Brai.
 
 ### Modified Capabilities
 

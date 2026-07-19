@@ -318,10 +318,8 @@ jobs:
             if [[ -n "$DELIVERY_URL" ]]; then echo "- URL: ${DELIVERY_URL}"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Log into GHCR to retain the tiny full dev manifest
-        if: >-
-          needs.assemble-request.outputs.target == 'dev' &&
-          steps.submit.outputs.state == 'deployed'
+      - name: Log into GHCR to retain the exact full delivery manifest
+        if: steps.submit.outputs.state == 'deployed'
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
           registry: ghcr.io

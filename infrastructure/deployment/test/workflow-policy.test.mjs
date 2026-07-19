@@ -71,6 +71,17 @@ describe("GitHub delivery workflow policy", () => {
       "${{ steps.image.outputs.reference }}:brai-${{ matrix.image.image }}-sha-",
     );
     expect(delivery).toContain("brai-delivery-manifest-preview-${REVISION}");
+    const terminalManifestLogin =
+      "Log into GHCR to retain the exact full delivery manifest";
+    const terminalLoginIndex = delivery.indexOf(terminalManifestLogin);
+    expect(terminalLoginIndex).toBeGreaterThanOrEqual(0);
+    expect(delivery).toContain("if: steps.submit.outputs.state == 'deployed'");
+    expect(terminalLoginIndex).toBeLessThan(
+      delivery.indexOf("Publish the exact full dev image manifest"),
+    );
+    expect(terminalLoginIndex).toBeLessThan(
+      delivery.indexOf("Publish the exact full preview manifest"),
+    );
     expect(delivery).not.toContain("make-images-public:");
     expect(delivery).not.toContain("/packages/container/");
     expect(delivery).not.toContain("pull_request_target");

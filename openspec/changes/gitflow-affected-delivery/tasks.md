@@ -10,6 +10,7 @@
 - [x] 2.2 Publish only affected GHCR images, attach provenance/SBOM and retain a small manifest artifact.
 - [x] 2.3 Add dev, preview, release and explicit production-promotion workflows with exact revision checks and concurrency controls.
 - [x] 2.4 Add repository policy script and operator instructions for protected branches, environments, auto-merge and fork workflow denial.
+- [x] 2.5 Make GHCR authentication a shared terminal prerequisite for Dev and Preview/release manifests, with a workflow-policy regression test.
 
 ## 3. Preview controller and host contracts
 
@@ -28,8 +29,8 @@
 
 - [x] 5.1 Add focused tests for classification, manifests, slot lifecycle, rejection and rollback.
 - [x] 5.2 Run formatting, targeted Nx checks, deployment/Compose tests, OpenSpec validation and security policy checks.
-- [ ] 5.3 Connect and configure the GitHub repository, then verify protected workflow behavior against a controlled branch.
-- [ ] 5.4 Install the host-side controller and complete synthetic dev/preview verification without changing legacy traffic.
+- [ ] 5.3 Complete terminal GitHub workflow verification on a controlled branch: Dev and Preview/release both persist their exact immutable manifests and remain green.
+- [ ] 5.4 Complete real p01 HTTPS validation, merge-triggered cleanup and slot release without changing legacy traffic.
 - [ ] 5.5 Perform owner-approved legacy dev cutover, capacity baseline and real branch/release/rollback verification.
 
 ## 6. Documentation and governance
