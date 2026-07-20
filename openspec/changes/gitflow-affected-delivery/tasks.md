@@ -18,6 +18,7 @@
 - [x] 3.2 Implement snapshot/restore, slot database isolation, migration runner and budget enforcement without attachments or build artifacts.
 - [x] 3.3 Add prefixed preview/dev Compose rendering, protected Caddy route rendering and health-gated atomic manifest activation.
 - [x] 3.4 Add scoped host receiver commands, cleanup, log/image retention and capacity admission checks.
+- [ ] 3.5 Preserve the managed Dev Caddy block when the host controller is reinstalled after cutover.
 
 ## 4. Security and observability
 
@@ -25,7 +26,7 @@
 - [x] 4.2 Add private GitHub status/notification diagnostics for failed checks, queueing, capacity and rollback.
 - [x] 4.3 Add disk, CPU, RAM, database and log budget checks with safe non-destructive behavior.
 - [x] 4.4 Bind preview cleanup and owner acceptance to documented GitHub OIDC claims and test requests that omit event-payload-only fields.
-- [ ] 4.5 Calibrate the host free-space floor to the bounded five-preview budget without deleting legacy environments.
+- [x] 4.5 Calibrate the host free-space floor to the bounded five-preview budget without deleting legacy environments.
 
 ## 5. Validation and migration
 

@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-readonly source_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+readonly source_root
 readonly install_root=/srv/opt/brai-delivery
 readonly config_root=/etc/brai-delivery
 readonly expected_repository=HexaFox-Labs/Brai-One
@@ -84,15 +85,22 @@ if [[ $(stat --format='%u:%g:%a' "${controller_config}") != 0:0:600 ]]; then
   exit 1
 fi
 
+readonly caddyfile=${BRAI_CADDYFILE:-/etc/caddy/Caddyfile}
+caddy_apply_mode=--apply
+if sed -n '/^# BEGIN BRAI-NEW DELIVERY$/,/^# END BRAI-NEW DELIVERY$/p' "${caddyfile}" | grep -Fq 'dev.brai.one {'; then
+  caddy_apply_mode=--apply-dev
+fi
+caddy_check_mode=${caddy_apply_mode/--apply/--check}
+
 BRAI_DELIVERY_CADDY_ROUTE_ROOT="${install_root}/caddy" \
-  node "${install_root}/caddy/manage-delivery-route.mjs" --check
+  node "${install_root}/caddy/manage-delivery-route.mjs" "${caddy_check_mode}"
 systemctl daemon-reload
 systemctl enable brai-delivery.service brai-delivery-sweep.timer
 systemctl restart brai-delivery.service
 systemctl start brai-delivery-sweep.timer
 systemctl --quiet is-active brai-delivery.service
 BRAI_DELIVERY_CADDY_ROUTE_ROOT="${install_root}/caddy" \
-  node "${install_root}/caddy/manage-delivery-route.mjs" --apply
+  node "${install_root}/caddy/manage-delivery-route.mjs" "${caddy_apply_mode}"
 
 # This is a host-runtime installation, so keep the required host registry in
 # the same atomic operational change. The record deliberately contains no
@@ -103,6 +111,7 @@ if [[ ! -f ${deployment_registry} || -L ${deployment_registry} ]]; then
   exit 1
 fi
 if ! grep -Fqx '## Brai delivery controller' "${deployment_registry}"; then
+  # shellcheck disable=SC2016 # Markdown backticks are literal registry text.
   printf '%s\n' \
     '' \
     '## Brai delivery controller' \
