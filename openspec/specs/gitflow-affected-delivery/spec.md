@@ -40,10 +40,13 @@ and exact target manifest have both been persisted; its job MUST authenticate
 to GHCR before publishing either Dev or Preview/release manifest. Every `dev`
 revision and every promotable `release/*` revision MUST have an exact immutable
 manifest even when no runtime image changed; this carry-forward MUST NOT build
-or restart runtime. Dev affected calculation MUST begin at the source revision
-of the actually published current Dev manifest and include skipped intermediate
-commits after a replaced pending run. Release calculation MUST use the frozen
-Dev merge-base. The protected `dev` branch MUST require an exact
+or restart runtime. Because a manifest artifact is a commandless `scratch`
+image, every workflow reader MUST supply an explicit inert command when
+creating its never-started extraction container and MUST remove that container
+after copying the manifest. Dev affected calculation MUST begin at the source
+revision of the actually published current Dev manifest and include skipped
+intermediate commits after a replaced pending run. Release calculation MUST use
+the frozen Dev merge-base. The protected `dev` branch MUST require an exact
 owner-issued `runtime-acceptance` status, so manual merge cannot bypass Preview.
 Production manifests MUST use the receiver's explicit host contract and only
 single-package repository-linked digest references. A protected rollback MAY
@@ -87,6 +90,13 @@ exact Dev manifest, never an unmerged feature Preview.
 - **THEN** the surviving run computes affected changes from the last actually
   published Dev revision through its own head
 - **AND** no runtime change from the skipped commit is omitted
+
+#### Scenario: Workflow reads a commandless manifest artifact
+
+- **WHEN** a workflow needs `/manifest.json` from its immutable `scratch` image
+- **THEN** it creates a never-started temporary container with an explicit
+  inert command and copies the file
+- **AND** missing image command metadata cannot break extraction
 
 #### Scenario: Protected production rollback selects an exact revision
 

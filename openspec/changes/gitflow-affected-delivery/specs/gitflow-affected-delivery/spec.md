@@ -35,6 +35,10 @@ to GHCR before publishing either Dev or Preview/release manifest.
 Every `dev` revision and every promotable `release/*` revision MUST have an
 exact immutable manifest even when the revision changes no runtime image; such
 a manifest-only carry-forward MUST NOT rebuild or restart runtime services.
+Because an immutable manifest artifact is a commandless `scratch` image,
+every workflow path that extracts it MUST supply an explicit inert command when
+creating the temporary container, MUST NOT start that container and MUST remove
+it after copying the manifest.
 Dev affected calculation MUST start from the source revision of the actually
 published current Dev manifest and MUST include skipped intermediate commits
 after a replaced pending workflow run. Release affected calculation MUST use
@@ -62,6 +66,14 @@ MUST resolve through an exact Dev manifest, never an unmerged feature Preview.
   seven validated image digests and the new Dev source revision
 - **AND** it does not build an image, invoke the controller or restart a
   container
+
+#### Scenario: Workflow reads a commandless manifest artifact
+
+- **WHEN** Dev, Preview reuse, manifest carry-forward or production promotion
+  needs `/manifest.json` from its immutable `scratch` image
+- **THEN** the workflow creates a never-started temporary container with an
+  explicit inert command and copies the file
+- **AND** commandless image metadata cannot make manifest extraction fail
 
 #### Scenario: Newly created release branch freezes Dev
 

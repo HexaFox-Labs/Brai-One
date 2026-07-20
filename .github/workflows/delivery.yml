@@ -73,7 +73,7 @@ jobs:
           if [[ "$GITHUB_REF_NAME" == dev && "$BOOTSTRAP_DEV" != true ]]; then
             image="ghcr.io/${GITHUB_REPOSITORY,,}:brai-delivery-manifest-dev-current"
             docker pull "$image"
-            container=$(docker create "$image")
+            container=$(docker create "$image" /manifest.json)
             trap 'docker rm -f "$container" >/dev/null' EXIT
             docker cp "$container:/manifest.json" current-dev-manifest.json
             base=$(node --input-type=module <<'NODE'
@@ -192,7 +192,7 @@ jobs:
             echo "No exact preceding environment manifest is available" >&2
             exit 1
           fi
-          container=$(docker create "$source_image")
+          container=$(docker create "$source_image" /manifest.json)
           trap 'docker rm -f "$container" >/dev/null' EXIT
           docker cp "$container:/manifest.json" source-manifest.json
 
@@ -419,7 +419,7 @@ jobs:
             echo "available=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          container=$(docker create "$image")
+          container=$(docker create "$image" /manifest.json)
           trap 'docker rm -f "$container" >/dev/null' EXIT
           docker cp "$container:/manifest.json" preview-manifest.json
           node --input-type=module <<'NODE'

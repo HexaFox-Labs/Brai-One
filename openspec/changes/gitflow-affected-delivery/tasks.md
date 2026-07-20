@@ -14,6 +14,7 @@
 - [x] 2.6 Require an exact owner-issued runtime acceptance status on `dev` so manual merge cannot bypass Preview, and replace the impossible self-review trigger with an owner-only dispatch.
 - [x] 2.7 Carry immutable image manifests across non-runtime Dev/release revisions, derive Dev affected scope from the actually published manifest to survive replaced pending runs, and resolve release branches against the exact frozen Dev base without rebuilding unrelated runtime images.
 - [x] 2.8 Accept the repository's single-package GHCR digest format in a bumped fail-closed production host contract, support protected exact-revision rollback and add regression coverage.
+- [x] 2.9 Make all commandless scratch-manifest readers use a never-started extraction container with an explicit inert command and cover every workflow path with regression tests.
 
 ## 3. Preview controller and host contracts
 
