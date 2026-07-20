@@ -65,7 +65,7 @@ describe("readMigrationFiles", () => {
     ]);
   });
 
-  it("keeps the production Factory set exactly at its two owned migrations", async () => {
+  it("keeps the production Factory set with its runtime isolation migration", async () => {
     const migrations = await readMigrationFiles(
       undefined,
       BRAI_FACTORY_MIGRATION_FILE_PATTERN,
@@ -73,7 +73,23 @@ describe("readMigrationFiles", () => {
     expect(migrations.map((migration) => migration.version)).toEqual([
       "0001_brai_factory.sql",
       "0002_brai_factory_runtime_limits.sql",
+      "0003_brai_factory_runtime_public_isolation.sql",
     ]);
+  });
+
+  it("removes inherited public privileges before provisioning the runtime login", async () => {
+    const migration = await readFile(
+      new URL(
+        "../migrations/0003_brai_factory_runtime_public_isolation.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    expect(migration).toContain("REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC");
+    expect(migration).toContain("REVOKE USAGE ON SCHEMA public FROM PUBLIC");
+    expect(migration).toContain("WHERE rolname ~ '^brai_[a-z0-9_]+_runtime$'");
+    expect(migration).toContain("IF existing_role.had_temporary THEN");
   });
 
   it("keeps the Factory runtime bounded by database-side limits", async () => {
