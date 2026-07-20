@@ -116,7 +116,7 @@ brai_deploy_assert_account() {
   fi
 
   brai_deploy_assert_exact_path "${BRAI_DEPLOY_HOME}" directory 0:0 755
-  brai_deploy_assert_exact_path "${BRAI_DEPLOY_SSH_DIR}" directory 0:0 700
+  brai_deploy_assert_exact_path "${BRAI_DEPLOY_SSH_DIR}" directory 0:0 755
 }
 
 brai_deploy_assert_directory_entries() {
@@ -279,7 +279,7 @@ brai_deploy_assert_active() {
   brai_deploy_assert_exact_path \
     "${BRAI_DEPLOY_EXPECTED_KEY}" file 0:0 600
   brai_deploy_assert_exact_path \
-    "${BRAI_DEPLOY_AUTHORIZED_KEYS}" file 0:0 600
+    "${BRAI_DEPLOY_AUTHORIZED_KEYS}" file 0:0 644
   brai_deploy_assert_exact_path \
     "${BRAI_DEPLOY_SUDOERS}" file 0:0 440
   brai_deploy_assert_exact_path \

@@ -87,11 +87,42 @@ if [[ -L ${BRAI_DEPLOY_SSH_DIR} ]]; then
   echo "Deployment SSH directory must not be a symlink" >&2
   exit 1
 elif [[ ! -e ${BRAI_DEPLOY_SSH_DIR} ]]; then
-  install -d -o root -g root -m 0700 "${BRAI_DEPLOY_SSH_DIR}"
+  install -d -o root -g root -m 0755 "${BRAI_DEPLOY_SSH_DIR}"
 fi
 if [[ ! -d ${BRAI_DEPLOY_HOME} || ! -d ${BRAI_DEPLOY_SSH_DIR} ]]; then
   echo "Deployment home and SSH path must be directories" >&2
   exit 1
+fi
+
+# OpenSSH opens the configured key file under the target account UID. Migrate
+# only the previously installed root-owned modes; broader or foreign-owned
+# paths still fail closed instead of being repaired.
+ssh_directory_owner=$(stat --format='%u:%g' "${BRAI_DEPLOY_SSH_DIR}")
+ssh_directory_mode=$(stat --format='%a' "${BRAI_DEPLOY_SSH_DIR}")
+if [[ ${ssh_directory_owner} != 0:0 ||
+  ! ${ssh_directory_mode} =~ ^(700|755)$ ]]; then
+  echo "Deployment SSH directory has unsafe ownership or mode" >&2
+  exit 1
+fi
+if [[ -e ${BRAI_DEPLOY_AUTHORIZED_KEYS} ]]; then
+  if [[ -L ${BRAI_DEPLOY_AUTHORIZED_KEYS} ||
+    ! -f ${BRAI_DEPLOY_AUTHORIZED_KEYS} ]]; then
+    echo "Deployment authorized keys path must be a regular file" >&2
+    exit 1
+  fi
+  authorized_keys_owner=$(stat --format='%u:%g' \
+    "${BRAI_DEPLOY_AUTHORIZED_KEYS}")
+  authorized_keys_mode=$(stat --format='%a' \
+    "${BRAI_DEPLOY_AUTHORIZED_KEYS}")
+  if [[ ${authorized_keys_owner} != 0:0 ||
+    ! ${authorized_keys_mode} =~ ^(600|644)$ ]]; then
+    echo "Deployment authorized keys file has unsafe ownership or mode" >&2
+    exit 1
+  fi
+fi
+chmod 0755 "${BRAI_DEPLOY_SSH_DIR}"
+if [[ -e ${BRAI_DEPLOY_AUTHORIZED_KEYS} ]]; then
+  chmod 0644 "${BRAI_DEPLOY_AUTHORIZED_KEYS}"
 fi
 brai_deploy_assert_account
 
