@@ -44,7 +44,8 @@ to GHCR before publishing either Dev or Preview/release manifest.
 - **WHEN** Sergey accepts a green runtime preview revision and required checks
   remain green
 - **THEN** GitHub native auto-merge may merge that exact pull request to `dev`
-- **AND** the dev manifest deploys only affected image changes
+- **AND** the Dev manifest records the resulting merge revision while reusing
+  the exact accepted Preview image digests for affected images
 
 #### Scenario: Preview manifest persistence fails after a healthy deploy
 

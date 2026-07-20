@@ -30,6 +30,12 @@ assert(
 );
 assert(repo.delete_branch_on_merge === true, "Merged branches must be deleted");
 assert(
+  repo.allow_squash_merge === true &&
+    repo.allow_merge_commit === false &&
+    repo.allow_rebase_merge === false,
+  "Runtime delivery requires squash-only pull-request merging",
+);
+assert(
   actions.default_workflow_permissions === "read" &&
     actions.can_approve_pull_request_reviews === false,
   "Default workflow permissions must be read-only",

@@ -78,6 +78,17 @@ images are referenced, not rebuilt or copied. Preview, dev, release and
 production therefore differ only by their manifest, database and container
 prefix.
 
+GitHub squash merge creates a new Dev commit SHA. On that push delivery resolves
+the merged primary-repository pull request through GitHub's commit-to-PR API,
+loads its exact Preview manifest and reuses the relevant digest(s). The new Dev
+manifest truthfully records its merge SHA while retaining the byte-identical
+accepted image(s). Missing or ambiguous PR linkage, or a missing manifest,
+falls back to the normal affected build; a malformed linked manifest fails
+closed. Production uses an exact release Preview manifest when present and the
+exact Dev manifest when a frozen release branch has no runtime difference.
+Runtime delivery keeps squash as the sole allowed GitHub merge method so one
+Dev push cannot expose only a prefix of a multi-commit accepted Preview.
+
 The existing production manifest/host contract is retained and generalized;
 admin images are one-off migration tools, not long-lived preview services.
 

@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   promote-exact-release-preview:
@@ -14,17 +15,24 @@ jobs:
     timeout-minutes: 15
     environment: production
     steps:
-      - name: Fetch the immutable manifest from this release preview
+      - name: Fetch the immutable manifest from this release preview or Dev
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           REVISION: ${{ github.sha }}
         run: |
           set -euo pipefail
-          image="ghcr.io/${GITHUB_REPOSITORY,,}:brai-delivery-manifest-preview-${REVISION}"
-          docker pull "$image"
+          for source in preview dev; do
+            image="ghcr.io/${GITHUB_REPOSITORY,,}:brai-delivery-manifest-${source}-${REVISION}"
+            if docker pull "$image"; then break; fi
+            image=""
+          done
+          if [[ -z "${image:-}" ]]; then
+            echo "No exact release preview or Dev manifest exists for ${REVISION}" >&2
+            exit 1
+          fi
           container=$(docker create "$image")
           trap 'docker rm -f "$container" >/dev/null' EXIT
-          docker cp "$container:/manifest.json" preview-manifest.json
+          docker cp "$container:/manifest.json" delivery-manifest.json
 
       - name: Convert and validate the fixed production receiver manifest
         env:
@@ -33,21 +41,21 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import { readFile, writeFile } from "node:fs/promises";
-          const source = JSON.parse(await readFile("preview-manifest.json", "utf8"));
+          const source = JSON.parse(await readFile("delivery-manifest.json", "utf8"));
           const names = ["web", "api-gateway", "factory", "access", "factory-admin", "access-admin", "nats"];
           const root = `ghcr.io/${process.env.GITHUB_REPOSITORY.toLowerCase()}`;
           if (source.revision !== process.env.REVISION || !source.images) {
-            throw new Error("Preview manifest is not for this exact release revision");
+            throw new Error("Delivery manifest is not for this exact release revision");
           }
           const images = {};
           for (const name of names) {
             const reference = source.images[name];
             const match = typeof reference === "string" && reference.match(new RegExp(`^${root.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}@(sha256:[0-9a-f]{64})$`));
-            if (!match) throw new Error(`Preview manifest has invalid ${name} image`);
+            if (!match) throw new Error(`Delivery manifest has invalid ${name} image`);
             images[name] = { digest: match[1], reference };
           }
           if (Object.keys(source.images).length !== names.length) {
-            throw new Error("Preview manifest image set is incomplete");
+            throw new Error("Delivery manifest image set is incomplete");
           }
           await writeFile("production-manifest.json", `${JSON.stringify({
             schema_version: "brai.deployment.images.v1",

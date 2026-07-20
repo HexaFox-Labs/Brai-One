@@ -30,7 +30,7 @@ describe("GitHub delivery workflow policy", () => {
     expect(workflow).not.toContain("BRAI_PRODUCTION_DEPLOY_PRIVATE_KEY");
   });
 
-  it("permits production only from an exact release preview in its protected job", async () => {
+  it("permits production only from an exact release preview or Dev manifest in its protected job", async () => {
     const workflow = await readFile(
       resolve(workspaceRoot, ".github/workflows/promote-production.yml"),
       "utf8",
@@ -38,7 +38,8 @@ describe("GitHub delivery workflow policy", () => {
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).toContain("startsWith(github.ref, 'refs/heads/release/')");
     expect(workflow).toContain("environment: production");
-    expect(workflow).toContain("preview-${REVISION}");
+    expect(workflow).toContain("for source in preview dev; do");
+    expect(workflow).toContain("brai-delivery-manifest-${source}-${REVISION}");
     expect(workflow).toContain("StrictHostKeyChecking=yes");
     expect(workflow).not.toContain("pull_request_target");
   });
@@ -63,7 +64,9 @@ describe("GitHub delivery workflow policy", () => {
     ]);
     expect(delivery).toContain("id-token: write");
     expect(delivery).toContain("BRAI_DELIVERY_ENDPOINT");
-    expect(delivery).toContain("needs: [verify-and-plan, build-images]");
+    expect(delivery).toContain(
+      "needs: [verify-and-plan, reuse-preview-images, build-images]",
+    );
     expect(delivery).toContain(
       "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}",
     );
@@ -71,6 +74,16 @@ describe("GitHub delivery workflow policy", () => {
       "${{ steps.image.outputs.reference }}:brai-${{ matrix.image.image }}-sha-",
     );
     expect(delivery).toContain("brai-delivery-manifest-preview-${REVISION}");
+    expect(delivery).toContain(
+      "commits/${process.env.HEAD_SHA}/pulls?per_page=100",
+    );
+    expect(delivery).toContain(
+      "manifest.revision !== process.env.PREVIEW_REVISION",
+    );
+    expect(delivery).toContain("reused-preview-digest-results-");
+    expect(delivery).toContain(
+      "needs.reuse-preview-images.outputs.available == 'true'",
+    );
     const terminalManifestLogin =
       "Log into GHCR to retain the exact full delivery manifest";
     const terminalLoginIndex = delivery.indexOf(terminalManifestLogin);
@@ -95,6 +108,7 @@ describe("GitHub delivery workflow policy", () => {
     );
     expect(acceptance).toContain("types: [submitted]");
     expect(acceptance).toContain("/v1/status?branch=");
+    expect(acceptance).toContain("mergeMethod: SQUASH");
     expect(acceptance).not.toContain("actions/checkout");
     expect(acceptance).not.toContain("pull_request_target");
   });
