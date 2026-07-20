@@ -139,6 +139,12 @@ host baseline. The floor is a guardrail, not a cleanup trigger: admission
 failure queues a preview and never deletes a healthy active environment. The
 active limit may rise only through a measured load test.
 
+The host installer inspects only the existing managed Caddy block. If that
+block already contains `dev.brai.one`, it validates and reapplies the combined
+Dev-and-Preview route; otherwise it performs the initial preview-only route
+installation. Reinstalling the controller therefore cannot roll back an
+approved Dev cutover.
+
 ### Public repository trust boundary
 
 Only branch events whose head repository equals `HexaFox-Labs/Brai-One` are
