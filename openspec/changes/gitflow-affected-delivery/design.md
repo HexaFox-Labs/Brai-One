@@ -45,24 +45,32 @@ repository and is the human release acceptor.
 
 `feature/*`, `fix/*` and `docs/*` branch from `dev`. Runtime branches receive
 a preview after their first green qualifying commit. Sergey accepts that exact
-revision; automation then enables GitHub native auto-merge, which still waits
-for required checks. Docs/non-runtime changes do not allocate previews or need
-acceptance and merge after their reduced required checks. `release/*` freezes a
-green dev revision; it gets priority for a preview only if its runtime manifest
-differs. `main` is production only and production promotion is a separate
-explicit workflow dispatch with protected-environment approval. Hotfixes branch
-from `main` and return to `dev` after production promotion.
+revision; the owner-only workflow records `runtime-acceptance`, after which the
+authorized primary agent requests a squash merge with the exact accepted head
+SHA. GitHub branch protection remains the merge arbiter and rejects a changed
+head or a newly failing required check. The workflow does not merge with
+`GITHUB_TOKEN`, because GitHub suppresses ordinary downstream workflow events
+created by that token; using the agent's owner credential preserves Dev
+delivery and Preview cleanup. Sergey only supplies the acceptance decision and
+does not perform Git operations manually. Docs/non-runtime changes do not
+allocate previews or need acceptance and merge after their reduced required
+checks. `release/*` freezes a green dev revision; it gets priority for a preview
+only if its runtime manifest differs. `main` is production only and production
+promotion is a separate explicit workflow dispatch with protected-environment
+approval. Hotfixes branch from `main` and return to `dev` after production
+promotion.
 
-This retains GitHub's protected merge mechanism instead of scripting a merge
-before checks finish, which was the proven legacy race.
-
-Runtime acceptance is a required commit status on `dev`, not merely an
-auto-merge convenience. Only an owner-dispatched trusted workflow may write
+Runtime acceptance is a required commit status on `dev`, not merely a
+merge convenience. Only an owner-dispatched trusted workflow may write
 that status after the controller confirms the exact branch revision. This
 prevents a manual squash merge from bypassing Preview and avoids GitHub's
 impossible self-review path when the repository owner authored the pull
 request. Non-runtime revisions receive the same status automatically after
 their reduced delivery plan proves that no Preview is required.
+`workflow_dispatch` requires the workflow file to exist on the repository
+default branch; the initial repository bootstrap therefore installs this
+control-plane workflow on `main` before relying on it, while subsequent runs
+execute the trusted `dev` revision.
 
 ### Impact classification is declarative and fail-closed
 
@@ -87,15 +95,21 @@ production therefore differ only by their manifest, database and container
 prefix.
 
 GitHub squash merge creates a new Dev commit SHA. On that push delivery resolves
-the merged primary-repository pull request through GitHub's commit-to-PR API,
-loads its exact Preview manifest and reuses the relevant digest(s). The new Dev
+the merged primary-repository pull requests throughout the undelivered
+base-to-head range through GitHub's commit-to-PR API, loads the newest available
+exact Preview manifest and reuses the relevant digest(s). This handles a failed
+or replaced intermediate Dev run without losing its accepted Preview. The
+canonical controller manifest maps every image directly to a repository-linked
+digest string; Dev reuse validates that form rather than the separate
+production receiver's `{digest, reference}` transport shape. The new Dev
 manifest truthfully records its merge SHA while retaining the byte-identical
-accepted image(s). Missing or ambiguous PR linkage, or a missing manifest,
-falls back to the normal affected build; a malformed linked manifest fails
-closed. Production uses an exact release Preview manifest when present and the
-exact Dev manifest when a frozen release branch has no runtime difference.
-Runtime delivery keeps squash as the sole allowed GitHub merge method so one
-Dev push cannot expose only a prefix of a multi-commit accepted Preview.
+accepted image(s). Missing or ambiguous PR linkage, or no usable Preview
+manifest, falls back to the normal affected build; a malformed linked manifest
+fails closed. Production uses an exact release Preview manifest when present
+and the exact Dev manifest when a frozen release branch has no runtime
+difference. Runtime delivery keeps squash as the sole allowed GitHub merge
+method so one Dev push cannot expose only a prefix of a multi-commit accepted
+Preview.
 
 Every Dev SHA also receives an immutable manifest, including non-runtime
 merges. A non-runtime push copies only the seven validated digest references

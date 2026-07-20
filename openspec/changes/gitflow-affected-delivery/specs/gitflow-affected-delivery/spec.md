@@ -45,7 +45,12 @@ after a replaced pending workflow run. Release affected calculation MUST use
 the frozen Dev merge-base.
 The protected `dev` branch MUST require an exact owner-issued runtime
 acceptance status for Preview-requiring revisions and MUST NOT permit a manual
-merge to bypass that status. Production manifests MUST use the explicit host
+merge to bypass that status. After the workflow succeeds, the authorized
+primary agent MUST request a protected squash merge with the exact accepted
+head revision; GitHub branch protection MUST remain authoritative for all
+required checks and normal merge-triggered workflows MUST remain enabled.
+The manually dispatched workflow MUST already exist on the default branch
+before the acceptance path is activated. Production manifests MUST use the explicit host
 contract version installed on the receiver and MUST accept only the
 repository-linked single-package GHCR digest form. A protected production
 rollback MAY select a previously persisted exact environment revision but MUST
@@ -56,7 +61,8 @@ MUST resolve through an exact Dev manifest, never an unmerged feature Preview.
 
 - **WHEN** Sergey accepts a green runtime preview revision and its required
   checks remain green
-- **THEN** GitHub native auto-merge may merge that exact pull request to `dev`
+- **THEN** the owner-only workflow records acceptance and the authorized
+  primary agent requests a protected squash merge for that exact head revision
 - **AND** the dev manifest deploys only the affected image changes
 
 #### Scenario: Non-runtime Dev revision advances source history
@@ -89,7 +95,16 @@ MUST resolve through an exact Dev manifest, never an unmerged feature Preview.
   is still executing
 - **THEN** the surviving run reads the last actually published Dev revision
   and computes affected changes through its own head
+- **AND** it searches the entire undelivered commit range for the newest exact
+  accepted Preview manifest
 - **AND** every runtime change from the skipped commit is still built or reused
+
+#### Scenario: Dev reuses a canonical Preview manifest
+
+- **WHEN** an accepted Preview manifest maps an affected image to a canonical
+  repository-linked digest string
+- **THEN** Dev validates that string, extracts its digest and reuses the image
+- **AND** it does not require the production receiver's transport object shape
 
 #### Scenario: Preview manifest persistence fails after a healthy deploy
 
