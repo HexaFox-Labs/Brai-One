@@ -84,6 +84,9 @@ describe("GitHub delivery workflow policy", () => {
     expect(delivery).toContain(
       "needs.reuse-preview-images.outputs.available == 'true'",
     );
+    expect(delivery).toMatch(
+      /deliver:[\s\S]*?if: >-\n {6}always\(\) &&\n {6}needs\.assemble-request\.outputs\.request_available/u,
+    );
     const terminalManifestLogin =
       "Log into GHCR to retain the exact full delivery manifest";
     const terminalLoginIndex = delivery.indexOf(terminalManifestLogin);
