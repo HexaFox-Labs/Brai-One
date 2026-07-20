@@ -14,6 +14,8 @@ its merge base, expand them through a checked-in runtime dependency catalog,
 and run only required checks. Documentation-only changes SHALL NOT build runtime
 images, create a preview or run runtime test suites. Unknown or shared delivery
 inputs MUST use a conservative policy and MUST NOT be treated as documentation.
+A control path in a mixed change MUST NOT remove an Nx-affected runtime
+project, image, runtime closure or Preview requirement.
 
 #### Scenario: Web-only change
 
@@ -27,6 +29,15 @@ inputs MUST use a conservative policy and MUST NOT be treated as documentation.
 - **WHEN** a commit changes only classified documentation files
 - **THEN** CI runs reduced documentation checks only
 - **AND** no preview slot, runtime image build or deployment is created
+
+#### Scenario: Control and web changes share an undelivered range
+
+- **WHEN** an undelivered range changes both delivery-control files and the
+  `web` Nx project
+- **THEN** control checks run while `web` remains in the affected runtime image
+  set
+- **AND** Dev builds or reuses the exact web image rather than carrying the old
+  manifest forward
 
 ### Requirement: Git Flow promotion is protected and revision exact
 

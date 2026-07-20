@@ -1,3 +1,5 @@
+/* global process, URL */
+
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -73,11 +75,11 @@ export function resolveChangedRuntimeServices(affectedProjects, catalog) {
 export function resolveImpact(input, catalog) {
   const deliveryClass = classifyPaths(input.paths, catalog);
   const changedRuntimeServices =
-    deliveryClass === "runtime"
+    deliveryClass !== "documentation" && deliveryClass !== "none"
       ? resolveChangedRuntimeServices(input.affectedProjects, catalog)
       : [];
   const runtimeServices =
-    deliveryClass === "runtime"
+    deliveryClass !== "documentation" && deliveryClass !== "none"
       ? resolveRuntimeServices(input.affectedProjects, catalog)
       : [];
 
@@ -100,7 +102,7 @@ export function resolveImpact(input, catalog) {
     runtimeServices,
     images,
     builds: images.map((image) => resolveImageBuild(image, catalog)),
-    requiresPreview: deliveryClass === "runtime" && runtimeServices.length > 0,
+    requiresPreview: runtimeServices.length > 0,
   };
 }
 

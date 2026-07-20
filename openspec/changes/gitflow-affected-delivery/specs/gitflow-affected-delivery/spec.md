@@ -7,7 +7,9 @@ its merge base, expand them through a checked-in runtime dependency catalog,
 and run only the required lint, typecheck, build, unit, contract and declared
 e2e checks. Documentation-only changes SHALL NOT build runtime images, create a
 preview or run runtime test suites. Unknown or shared delivery inputs MUST use
-a conservative declared policy and MUST NOT be treated as documentation.
+a conservative declared policy and MUST NOT be treated as documentation. A
+control path in a mixed change MUST NOT remove an affected runtime project,
+image, runtime closure or Preview requirement.
 
 #### Scenario: Web-only change
 
@@ -22,13 +24,23 @@ a conservative declared policy and MUST NOT be treated as documentation.
 - **THEN** CI runs the reduced documentation checks only
 - **AND** no preview slot, runtime image build or deployment is created
 
+#### Scenario: Control and web changes share an undelivered range
+
+- **WHEN** an undelivered range changes both delivery-control files and the
+  `web` Nx project
+- **THEN** CI runs the conservative control checks and retains `web` in the
+  affected runtime image set
+- **AND** delivery builds or reuses the exact web image instead of carrying the
+  old Dev manifest forward
+
 ### Requirement: Git Flow promotion is protected and revision exact
 
 The system SHALL use `dev` as the integration branch, `release/*` as a frozen
 release-candidate branch and `main` as production history. Runtime changes MUST
 receive a green preview and explicit acceptance of the deployed revision before
-their GitHub auto-merge can be enabled. Production MUST be promoted only by an
-explicit protected release action after all release checks are green. A runtime
+the authorized primary agent may request an exact-head squash merge. Production
+MUST be promoted only by an explicit protected release action after all release
+checks are green. A runtime
 delivery check SHALL remain green only after its health-gated controller result
 and exact target manifest have both been persisted; its job MUST authenticate
 to GHCR before publishing either Dev or Preview/release manifest.
