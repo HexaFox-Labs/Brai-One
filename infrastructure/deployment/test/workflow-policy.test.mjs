@@ -121,6 +121,25 @@ describe("GitHub delivery workflow policy", () => {
     ).not.toThrow();
   });
 
+  it("supplies an inert command to every commandless scratch-manifest reader", async () => {
+    const workflows = await Promise.all(
+      ["delivery.yml", "promote-production.yml"].map((name) =>
+        readFile(resolve(workspaceRoot, ".github/workflows", name), "utf8"),
+      ),
+    );
+    const extractionCommands = workflows
+      .flatMap((workflow) =>
+        workflow.match(/container=\$\(docker create [^)]+\)/gu),
+      )
+      .filter(Boolean);
+    expect(extractionCommands).toEqual([
+      'container=$(docker create "$image" /manifest.json)',
+      'container=$(docker create "$source_image" /manifest.json)',
+      'container=$(docker create "$image" /manifest.json)',
+      'container=$(docker create "$image" /manifest.json)',
+    ]);
+  });
+
   it("keeps OCI artifacts in one source-linked package and binds delivery to OIDC", async () => {
     const [delivery, cleanup, acceptance] = await Promise.all([
       readFile(

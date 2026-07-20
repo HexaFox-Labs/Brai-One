@@ -107,6 +107,14 @@ frozen Dev revision produces no false full-workspace build. Non-runtime release
 revisions use the same manifest-only carry-forward and therefore remain exact
 promotion inputs without allocating a Preview slot.
 
+Manifest artifacts use `FROM scratch` and intentionally contain only
+`/manifest.json`; they have no runtime command. Every workflow reader therefore
+creates its temporary, never-started extraction container with an explicit
+inert command override before `docker cp`. The same invariant applies to the
+current Dev base, carry-forward source, accepted Preview source and production
+promotion source. A workflow-policy regression test enumerates all extraction
+sites so a future reader cannot reintroduce commandless `docker create`.
+
 GitHub concurrency can replace an older pending run when several Dev commits
 arrive quickly. A Dev push therefore ignores `event.before` as its delivery
 base and reads the exact source revision from the validated `dev-current`
@@ -241,6 +249,9 @@ event or branch.
 - [A post-deploy manifest step omits a target-specific prerequisite] → keep
   target-neutral authentication next to the shared terminal gate, assert it in
   the workflow policy test, and validate Dev plus a real Preview before merge.
+- [A scratch manifest artifact has no default command] → every temporary
+  extraction container supplies the inert `/manifest.json` command explicitly,
+  is never started, and is covered across all workflow readers.
 - [A lifecycle endpoint depends on an undocumented OIDC field] → bind it only
   to documented claims, keep the narrow event activity in trusted workflow YAML
   and test tokens that omit event-payload-only fields.

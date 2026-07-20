@@ -45,7 +45,7 @@ jobs:
             echo "No exact release preview or Dev manifest exists for ${REVISION}" >&2
             exit 1
           fi
-          container=$(docker create "$image")
+          container=$(docker create "$image" /manifest.json)
           trap 'docker rm -f "$container" >/dev/null' EXIT
           docker cp "$container:/manifest.json" delivery-manifest.json
 
