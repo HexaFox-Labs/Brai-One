@@ -84,6 +84,10 @@ Unknown paths, lockfile/toolchain/CI/deployment catalog changes, migrations and
 shared contracts are never silently classified as documentation. They select a
 conservative policy and cannot auto-deploy until explicitly handled. Pure docs
 and reader-only paths run format/link/policy checks only.
+Classification changes which control checks run; it never subtracts an Nx
+affected runtime project. A mixed control-plus-runtime range therefore retains
+the runtime image/build/Preview closure while also running the conservative
+control checks.
 
 ### One immutable image manifest per environment revision
 
