@@ -19,6 +19,10 @@ const pinnedFoundationMigrations = new Map([
     "e6fa002993452595da9e61370082dd7baa646f45843cef14954949946bc83f2d",
   ],
   [
+    "infrastructure/supabase/migrations/0003_brai_factory_runtime_public_isolation.sql",
+    "04d7e76e1f13e74572306ed45d8603fb65e7a965167c20e26dd2fac8f61cf8ea",
+  ],
+  [
     "services/brai-access/migrations/0001_initial.sql",
     "80e273d8115a9efac693cfc99d6c227a715b3b572068d9c9882bef64c3c45455",
   ],
