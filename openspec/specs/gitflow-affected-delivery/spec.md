@@ -33,21 +33,26 @@ inputs MUST use a conservative policy and MUST NOT be treated as documentation.
 The system SHALL use `dev` as the integration branch, `release/*` as a frozen
 release-candidate branch and `main` as production history. Runtime changes MUST
 receive a green preview and explicit acceptance of the deployed revision before
-GitHub auto-merge can be enabled. Production MUST be promoted only by an
-explicit protected release action after release checks are green. A runtime
-delivery check SHALL remain green only after its health-gated controller result
-and exact target manifest have both been persisted; its job MUST authenticate
-to GHCR before publishing either Dev or Preview/release manifest. Every `dev`
-revision and every promotable `release/*` revision MUST have an exact immutable
-manifest even when no runtime image changed; this carry-forward MUST NOT build
-or restart runtime. Because a manifest artifact is a commandless `scratch`
-image, every workflow reader MUST supply an explicit inert command when
-creating its never-started extraction container and MUST remove that container
-after copying the manifest. Dev affected calculation MUST begin at the source
-revision of the actually published current Dev manifest and include skipped
-intermediate commits after a replaced pending run. Release calculation MUST use
-the frozen Dev merge-base. The protected `dev` branch MUST require an exact
-owner-issued `runtime-acceptance` status, so manual merge cannot bypass Preview.
+the authorized primary agent may request an exact-head squash merge. Production
+MUST be promoted only by an explicit protected release action after release
+checks are green. A runtime delivery check SHALL remain green only after its
+health-gated controller result and exact target manifest have both been
+persisted; its job MUST authenticate to GHCR before publishing either Dev or
+Preview/release manifest. Every `dev` revision and every promotable `release/*`
+revision MUST have an exact immutable manifest even when no runtime image
+changed; this carry-forward MUST NOT build or restart runtime. Because a
+manifest artifact is a commandless `scratch` image, every workflow reader MUST
+supply an explicit inert command when creating its never-started extraction
+container and MUST remove that container after copying the manifest. Dev
+affected calculation MUST begin at the source revision of the actually
+published current Dev manifest and include skipped intermediate commits after a
+replaced or failed run. Dev reuse MUST search that whole undelivered range for
+the newest exact Preview and validate the controller's canonical image-reference
+strings. Release calculation MUST use the frozen Dev merge-base. The protected
+`dev` branch MUST require an exact owner-issued `runtime-acceptance` status, so
+manual merge cannot bypass Preview. GitHub Actions MUST NOT merge with
+`GITHUB_TOKEN` when doing so would suppress normal Dev delivery or Preview
+cleanup events.
 Production manifests MUST use the receiver's explicit host contract and only
 single-package repository-linked digest references. A protected rollback MAY
 select a previously persisted exact revision but MUST NOT rebuild its images or
@@ -58,7 +63,8 @@ exact Dev manifest, never an unmerged feature Preview.
 
 - **WHEN** Sergey accepts a green runtime preview revision and required checks
   remain green
-- **THEN** GitHub native auto-merge may merge that exact pull request to `dev`
+- **THEN** the authorized primary agent requests a protected squash merge for
+  that exact accepted head revision
 - **AND** the Dev manifest records the resulting merge revision while reusing
   the exact accepted Preview image digests for affected images
 
@@ -89,7 +95,16 @@ exact Dev manifest, never an unmerged feature Preview.
   run is executing
 - **THEN** the surviving run computes affected changes from the last actually
   published Dev revision through its own head
+- **AND** it searches the whole undelivered range for the newest exact accepted
+  Preview manifest
 - **AND** no runtime change from the skipped commit is omitted
+
+#### Scenario: Dev reuses a canonical Preview manifest
+
+- **WHEN** the accepted Preview maps an affected image directly to its
+  repository-linked digest reference
+- **THEN** Dev validates the reference string and extracts that digest
+- **AND** it does not require the production receiver's object transport shape
 
 #### Scenario: Workflow reads a commandless manifest artifact
 

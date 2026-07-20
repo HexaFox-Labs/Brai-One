@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: read
 
 jobs:
   enable-after-reduced-check:
@@ -18,11 +18,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Enable native auto-merge only for documentation paths
+      - name: Mark documentation-only pull requests ready for the primary agent
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           node --input-type=module <<'NODE'
@@ -52,19 +51,5 @@ jobs:
             console.log("Not a documentation-only pull request; auto-merge remains disabled.");
             process.exit(0);
           }
-          const response = await fetch("https://api.github.com/graphql", {
-            method: "POST",
-            headers: { ...headers, "content-type": "application/json" },
-            body: JSON.stringify({
-              query: `mutation($id: ID!) {
-                enablePullRequestAutoMerge(input: {pullRequestId: $id, mergeMethod: SQUASH}) {
-                  pullRequest { number }
-                }
-              }`,
-              variables: { id: process.env.PR_NODE_ID },
-            }),
-          });
-          const result = await response.json();
-          if (!response.ok || result.errors) throw new Error(JSON.stringify(result));
-          console.log("Native auto-merge enabled after required reduced checks.");
+          console.log("Documentation-only pull request is ready for exact-head agent merge.");
           NODE

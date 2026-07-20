@@ -15,6 +15,7 @@
 - [x] 2.7 Carry immutable image manifests across non-runtime Dev/release revisions, derive Dev affected scope from the actually published manifest to survive replaced pending runs, and resolve release branches against the exact frozen Dev base without rebuilding unrelated runtime images.
 - [x] 2.8 Accept the repository's single-package GHCR digest format in a bumped fail-closed production host contract, support protected exact-revision rollback and add regression coverage.
 - [x] 2.9 Make all commandless scratch-manifest readers use a never-started extraction container with an explicit inert command and cover every workflow path with regression tests.
+- [x] 2.10 Reuse canonical Preview manifest strings across the whole undelivered Dev range, make owner-only acceptance status-only so an authorized primary agent performs the exact-head protected squash merge without suppressing downstream events, and cover both contracts with executable tests.
 
 ## 3. Preview controller and host contracts
 
@@ -22,7 +23,7 @@
 - [x] 3.2 Implement snapshot/restore, slot database isolation, migration runner and budget enforcement without attachments or build artifacts.
 - [x] 3.3 Add prefixed preview/dev Compose rendering, protected Caddy route rendering and health-gated atomic manifest activation.
 - [x] 3.4 Add scoped host receiver commands, cleanup, log/image retention and capacity admission checks.
-- [ ] 3.5 Preserve the managed Dev Caddy block when the host controller is reinstalled after cutover.
+- [x] 3.5 Preserve the managed Dev Caddy block when the host controller is reinstalled after cutover.
 
 ## 4. Security and observability
 
@@ -37,7 +38,7 @@
 - [x] 5.1 Add focused tests for classification, manifests, slot lifecycle, rejection and rollback.
 - [x] 5.2 Run formatting, targeted Nx checks, deployment/Compose tests, OpenSpec validation and security policy checks; keep the Playwright-only webServer bounded on the many-core host.
 - [ ] 5.3 Complete terminal GitHub workflow verification on a controlled branch: Dev and Preview/release both persist their exact immutable manifests and remain green.
-- [ ] 5.4 Complete real p01 HTTPS validation, merge-triggered cleanup and slot release without changing legacy traffic.
+- [x] 5.4 Complete real p01 HTTPS validation, merge-triggered cleanup and slot release without changing legacy traffic.
 - [ ] 5.5 Perform owner-approved legacy dev cutover, capacity baseline and real branch/release/rollback verification.
 
 ## 6. Documentation and governance

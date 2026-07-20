@@ -141,7 +141,7 @@ describe("GitHub delivery workflow policy", () => {
   });
 
   it("keeps OCI artifacts in one source-linked package and binds delivery to OIDC", async () => {
-    const [delivery, cleanup, acceptance] = await Promise.all([
+    const [delivery, cleanup, acceptance, documentation] = await Promise.all([
       readFile(
         resolve(workspaceRoot, ".github/workflows/delivery.yml"),
         "utf8",
@@ -155,6 +155,10 @@ describe("GitHub delivery workflow policy", () => {
           workspaceRoot,
           ".github/workflows/enable-runtime-automerge.yml",
         ),
+        "utf8",
+      ),
+      readFile(
+        resolve(workspaceRoot, ".github/workflows/auto-merge-docs.yml"),
         "utf8",
       ),
     ]);
@@ -171,11 +175,9 @@ describe("GitHub delivery workflow policy", () => {
     );
     expect(delivery).toContain("brai-delivery-manifest-preview-${REVISION}");
     expect(delivery).toContain(
-      "commits/${process.env.HEAD_SHA}/pulls?per_page=100",
+      'tools/ci/preview-reuse.mjs candidates "$BASE_SHA" "$HEAD_SHA"',
     );
-    expect(delivery).toContain(
-      "manifest.revision !== process.env.PREVIEW_REVISION",
-    );
+    expect(delivery).toContain("tools/ci/preview-reuse.mjs extract \\");
     expect(delivery).toContain("reused-preview-digest-results-");
     expect(delivery).toContain(
       "needs.reuse-preview-images.outputs.available == 'true'",
@@ -183,7 +185,6 @@ describe("GitHub delivery workflow policy", () => {
     expect(delivery).toContain(
       "needs.reuse-preview-images.result == 'success' &&",
     );
-    expect(delivery).toContain("entry.reference !== `${root}${entry.digest}`");
     expect(delivery).toContain("carry-forward-exact-manifest");
     expect(delivery).toContain("tools/ci/carry-forward-delivery-manifest.mjs");
     expect(delivery).toContain("brai-delivery-manifest-dev-current");
@@ -224,9 +225,17 @@ describe("GitHub delivery workflow policy", () => {
     expect(acceptance).toContain("/v1/status?branch=");
     expect(acceptance).toContain("/statuses/${pullRequest.head.sha}");
     expect(acceptance).toContain('context: "runtime-acceptance"');
-    expect(acceptance).toContain("mergeMethod: SQUASH");
+    expect(acceptance).toContain("pull-requests: read");
+    expect(acceptance).not.toContain("api.github.com/graphql");
+    expect(acceptance).not.toContain("enablePullRequestAutoMerge");
     expect(acceptance).not.toContain("actions/checkout");
     expect(acceptance).not.toContain("pull_request_target");
     expect(acceptance).not.toContain("pull_request_review");
+    expect(documentation).toContain("pull-requests: read");
+    expect(documentation).toContain(
+      "Documentation-only pull request is ready for exact-head agent merge.",
+    );
+    expect(documentation).not.toContain("api.github.com/graphql");
+    expect(documentation).not.toContain("enablePullRequestAutoMerge");
   });
 });
