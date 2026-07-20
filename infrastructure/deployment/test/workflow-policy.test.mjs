@@ -84,6 +84,10 @@ describe("GitHub delivery workflow policy", () => {
     expect(delivery).toContain(
       "needs.reuse-preview-images.outputs.available == 'true'",
     );
+    expect(delivery).toContain(
+      "needs.reuse-preview-images.result == 'success' &&",
+    );
+    expect(delivery).toContain("entry.reference !== `${root}${entry.digest}`");
     expect(delivery).toMatch(
       /deliver:[\s\S]*?if: >-\n {6}always\(\) &&\n {6}needs\.assemble-request\.outputs\.request_available/u,
     );

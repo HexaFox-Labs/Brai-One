@@ -111,7 +111,8 @@ jobs:
       always() &&
       needs.verify-and-plan.outputs.requires_image_build == 'true' &&
       (needs.reuse-preview-images.result == 'skipped' ||
-       needs.reuse-preview-images.outputs.available != 'true')
+       (needs.reuse-preview-images.result == 'success' &&
+        needs.reuse-preview-images.outputs.available != 'true'))
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     permissions:
@@ -273,11 +274,18 @@ jobs:
           }
           await mkdir("digests", { recursive: true });
           for (const image of impact.images) {
-            const reference = manifest.images[image];
-            if (typeof reference !== "string" || !reference.startsWith(root)) {
+            const entry = manifest.images[image];
+            if (
+              entry === null ||
+              typeof entry !== "object" ||
+              Array.isArray(entry) ||
+              typeof entry.digest !== "string" ||
+              typeof entry.reference !== "string" ||
+              entry.reference !== `${root}${entry.digest}`
+            ) {
               throw new Error(`Preview manifest has no trusted ${image} digest`);
             }
-            const digest = reference.slice(root.length);
+            const digest = entry.digest;
             if (!/^sha256:[0-9a-f]{64}$/u.test(digest)) {
               throw new Error(`Preview manifest has invalid ${image} digest`);
             }
