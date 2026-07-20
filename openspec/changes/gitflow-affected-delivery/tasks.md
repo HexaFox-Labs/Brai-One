@@ -25,6 +25,7 @@
 - [x] 4.2 Add private GitHub status/notification diagnostics for failed checks, queueing, capacity and rollback.
 - [x] 4.3 Add disk, CPU, RAM, database and log budget checks with safe non-destructive behavior.
 - [x] 4.4 Bind preview cleanup and owner acceptance to documented GitHub OIDC claims and test requests that omit event-payload-only fields.
+- [ ] 4.5 Calibrate the host free-space floor to the bounded five-preview budget without deleting legacy environments.
 
 ## 5. Validation and migration
 

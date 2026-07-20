@@ -101,12 +101,15 @@ preview создаёт её своей проверенной миграцией
 | Максимальный snapshot          |  200 MiB | новый snapshot отклоняется; preview не получают неконтролируемые данные |
 | Preview slot (DB + NATS state) |  250 MiB | health-gated обновление откатывается/не активируется при превышении     |
 | Docker logs slot               |   10 MiB | `json-file` rotation `1 MiB × 1` на контейнер                           |
-| Host reserve                   |   25 GiB | новый preview ставится в очередь, здоровые окружения не удаляются       |
+| Host reserve                   |   20 GiB | новый preview ставится в очередь, здоровые окружения не удаляются       |
 | Initial active previews        |        5 | повышать только после измеренного load test                             |
 
 Образы используют общие content-addressed Docker layers. Controller удерживает
 только активные digests и две здоровые rollback-версии, а cleanup никогда не
-выполняет global Docker prune.
+выполняет global Docker prune. При первоначальном лимите в пять Preview их
+суммарный жёсткий writable-бюджет составляет не более 1.37 GiB. Поэтому резерв
+20 GiB сохраняет отдельный запас для Dev и production, не требуя удаления
+legacy-окружений ради запуска первого свободного слота.
 
 ## Первый запуск и управление
 
