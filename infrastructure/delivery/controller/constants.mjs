@@ -35,7 +35,7 @@ export const previewDatabaseWarnBytes = 80 * 1024 * 1024;
 export const previewSlotHardBytes = 250 * 1024 * 1024;
 export const previewLogBudgetBytes = 10 * 1024 * 1024;
 export const previewMiscBudgetBytes = 20 * 1024 * 1024;
-export const hostFreeFloorBytes = 25 * 1024 * 1024 * 1024;
+export const hostFreeFloorBytes = 20 * 1024 * 1024 * 1024;
 
 export function previewPrefix(slot) {
   if (!Number.isInteger(slot) || slot < 1 || slot > previewSlotCount) {

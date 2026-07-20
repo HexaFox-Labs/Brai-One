@@ -131,10 +131,13 @@ preview allocation at 200 MB until the data growth is investigated. Shared
 runtime image retention is active references plus two healthy rollback
 versions; no global prune is permitted.
 
-The controller preserves a 25 GB host free-space floor and reserves CPU/RAM
-for production and dev. It starts with five active preview leases after legacy
-retirement, then raises capacity only through a measured load test. Admission
-failure queues a preview and never deletes a healthy active environment.
+The controller preserves a 20 GiB host free-space floor and reserves CPU/RAM
+for production and dev. At the initial five-preview limit, the 250 MiB slot
+hard budget plus 10 MiB logs and 20 MiB miscellaneous state totals at most
+1.37 GiB, leaving at least 2.6 GiB above that floor on the measured 24 GiB
+host baseline. The floor is a guardrail, not a cleanup trigger: admission
+failure queues a preview and never deletes a healthy active environment. The
+active limit may rise only through a measured load test.
 
 ### Public repository trust boundary
 

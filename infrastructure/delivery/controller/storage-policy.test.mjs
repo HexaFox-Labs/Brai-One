@@ -5,6 +5,27 @@ import {
   assessPreviewAdmission,
   assessSnapshotSize,
 } from "./storage-policy.mjs";
+import { hostFreeFloorBytes } from "./constants.mjs";
+
+test("admits the bounded initial preview capacity above its calibrated host floor", () => {
+  assert.equal(hostFreeFloorBytes, 20 * 1024 ** 3);
+  assert.deepEqual(
+    assessPreviewAdmission({
+      freeBytes: 24 * 1024 ** 3,
+      active: 0,
+      activeLimit: 5,
+    }),
+    { allowed: true, warning: undefined },
+  );
+  assert.deepEqual(
+    assessPreviewAdmission({
+      freeBytes: hostFreeFloorBytes - 1,
+      active: 0,
+      activeLimit: 5,
+    }),
+    { allowed: false, reason: "host-free-space-floor" },
+  );
+});
 
 test("queues before deleting healthy resources when capacity is unavailable", () => {
   assert.deepEqual(
