@@ -167,6 +167,8 @@ never a checkout, `node_modules`, Gradle cache, build output or source backup.
 The system SHALL enforce configured preview data/log budgets, bounded image
 retention and a host free-space admission floor. Cleanup MUST target only
 controller-owned inactive resources and MUST NOT use a broad global prune.
+The production SSH authorization path MUST remain root-owned and non-writable
+by the deploy account while remaining readable by OpenSSH under that account.
 
 #### Scenario: Preview branch closes
 
@@ -181,6 +183,14 @@ controller-owned inactive resources and MUST NOT use a broad global prune.
   floor
 - **THEN** the request remains queued with a diagnostic
 - **AND** the controller does not delete a healthy active environment
+
+#### Scenario: OpenSSH reads the forced deployment key
+
+- **WHEN** the locked production deploy account authenticates with its one
+  configured Ed25519 key
+- **THEN** OpenSSH can traverse the root-owned `.ssh` directory and read the
+  root-owned `authorized_keys`
+- **AND** the account cannot modify either path or bypass the forced receiver
 
 ### Requirement: Public repository events cannot enter trusted delivery
 

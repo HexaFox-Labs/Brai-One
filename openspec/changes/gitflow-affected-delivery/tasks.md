@@ -17,6 +17,7 @@
 - [x] 2.9 Make all commandless scratch-manifest readers use a never-started extraction container with an explicit inert command and cover every workflow path with regression tests.
 - [x] 2.10 Reuse canonical Preview manifest strings across the whole undelivered Dev range, make owner-only acceptance status-only so an authorized primary agent performs the exact-head protected squash merge without suppressing downstream events, and cover both contracts with executable tests.
 - [x] 2.11 Preserve Nx-affected runtime services, images and Preview requirements when a range also contains control paths, with a mixed workflow-plus-web regression test.
+- [ ] 2.12 Keep the root-owned production SSH authorization immutable but readable by OpenSSH under the locked deploy UID, and verify real public-key authentication before retrying cutover.
 
 ## 3. Preview controller and host contracts
 

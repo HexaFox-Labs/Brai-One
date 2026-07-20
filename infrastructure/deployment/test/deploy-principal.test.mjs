@@ -123,7 +123,7 @@ User brai-new-deploy may run the following commands:
     );
   });
 
-  it("creates a locked account but never authorizes it in the installer", async () => {
+  it("creates a locked account and only migrates existing SSH read modes", async () => {
     const installer = await readFile(
       resolve(deploymentRoot, "install-host-tooling.sh"),
       "utf8",
@@ -131,7 +131,9 @@ User brai-new-deploy may run the following commands:
     expect(installer).toContain('groupadd --system "${BRAI_DEPLOY_GROUP}"');
     expect(installer).toContain("useradd \\");
     expect(installer).toContain('passwd --lock "${BRAI_DEPLOY_USER}"');
-    expect(installer).not.toContain("authorized_keys");
+    expect(installer).toContain('chmod 0755 "${BRAI_DEPLOY_SSH_DIR}"');
+    expect(installer).toContain('chmod 0644 "${BRAI_DEPLOY_AUTHORIZED_KEYS}"');
+    expect(installer).not.toContain("brai_deploy_expected_authorized_key");
     expect(installer).not.toContain("BRAI_DEPLOY_SUDOERS");
   });
 
@@ -167,6 +169,7 @@ User brai-new-deploy may run the following commands:
     expect(installSudo).toBeGreaterThan(0);
     expect(installSsh).toBeGreaterThan(installSudo);
     expect(finalize).toContain("brai_deploy_assert_active");
+    expect(finalize).toContain('chmod 0644 "${temporary_authorized_keys}"');
     expect(finalize).toContain("Refusing to replace an active deployment key");
     expect(finalize).toContain("if [[ ${activated} -eq 1 ]]");
     expect(finalize.lastIndexOf("activated=1", installSudo)).toBeGreaterThan(0);

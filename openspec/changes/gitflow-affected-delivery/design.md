@@ -229,6 +229,11 @@ untrusted `workflow_run` code path; default tokens are read-only and individual
 jobs receive only the explicit package or deployment permission needed. The
 production SSH key is exposed only to a protected production promotion job;
 the host deploy account accepts only the fixed manifest command.
+The deploy account cannot modify its authorization: its home, `.ssh` directory
+and `authorized_keys` remain root-owned. The directory and public-key file are
+nevertheless readable (`0755` and `0644`) because OpenSSH opens the configured
+key file under the target account UID; root-only read modes would make the
+otherwise valid forced key unusable.
 
 ### Lifecycle authorization uses the published OIDC contract
 

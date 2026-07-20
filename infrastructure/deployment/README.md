@@ -68,7 +68,10 @@ audits, a password-locked `brai-new-deploy` account with:
   group;
 - `/bin/sh` only because `sshd` needs a shell to execute the forced command;
 - a dedicated root-owned, non-writable home
-  `/srv/opt/brai-new-deploy-home` and root-owned mode `0700` `.ssh`.
+  `/srv/opt/brai-new-deploy-home`, root-owned mode `0755` `.ssh` and root-owned
+  mode `0644` `authorized_keys`. These public authorization paths are readable
+  because OpenSSH opens them under the locked deploy UID, but that UID cannot
+  modify them.
 
 It does not generate, read or install an SSH key. If an existing identity,
 home, authorization file or effective sudo grant differs from this contract,
