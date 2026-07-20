@@ -379,6 +379,7 @@ jobs:
     name: submit-delivery-request
     needs: [verify-and-plan, assemble-request]
     if: >-
+      always() &&
       needs.assemble-request.outputs.request_available == 'true' &&
       vars.BRAI_DELIVERY_ENDPOINT != ''
     runs-on: ubuntu-24.04
