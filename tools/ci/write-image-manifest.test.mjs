@@ -40,7 +40,7 @@ test("reuses unchanged image digests from a verified base manifest", async () =>
     basePath,
     `${JSON.stringify({
       schema_version: "brai.deployment.images.v1",
-      host_contract_version: "brai.production-host.v2",
+      host_contract_version: "brai.production-host.v3",
       source_repository: repository,
       source_revision: previousRevision,
       images: baseImages,

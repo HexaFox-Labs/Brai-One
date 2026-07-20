@@ -30,20 +30,21 @@ test("accepts cleanup from the dedicated closed-PR workflow without an action cl
   );
 });
 
-test("permits status lookup from the owner review workflow without an action claim", () => {
+test("permits status lookup only from the owner-dispatch workflow on dev", () => {
   const claims = {
-    base_ref: "dev",
-    event_name: "pull_request_review",
-    head_ref: "feature/web-only",
+    event_name: "workflow_dispatch",
+    ref: "refs/heads/dev",
     repository: "HexaFox-Labs/Brai-One",
     repository_visibility: "public",
     workflow_ref:
-      "HexaFox-Labs/Brai-One/.github/workflows/enable-runtime-automerge.yml@refs/heads/main",
+      "HexaFox-Labs/Brai-One/.github/workflows/enable-runtime-automerge.yml@refs/heads/dev",
   };
   assert.doesNotThrow(() => authorizePreviewStatus(claims, "feature/web-only"));
-  assert.throws(() => authorizePreviewStatus(claims, "feature/other"));
   assert.throws(() =>
-    authorizePreviewStatus({ ...claims, base_ref: "main" }, "feature/web-only"),
+    authorizePreviewStatus(
+      { ...claims, ref: "refs/heads/main" },
+      "feature/web-only",
+    ),
   );
   assert.throws(() =>
     authorizePreviewStatus(

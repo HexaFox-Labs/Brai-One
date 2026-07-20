@@ -39,9 +39,9 @@ export function authorizePreviewRelease(claims, branch) {
 export function authorizePreviewStatus(claims, branch) {
   assertTrustedWorkflow(claims, "enable-runtime-automerge.yml");
   if (
-    claims.event_name !== "pull_request_review" ||
-    claims.head_ref !== branch ||
-    claims.base_ref !== "dev"
+    typeof branch !== "string" ||
+    claims.event_name !== "workflow_dispatch" ||
+    claims.ref !== "refs/heads/dev"
   ) {
     throw new Error("OIDC token is not authorized for preview status");
   }

@@ -17,7 +17,7 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `pnpm dev --hostname 127.0.0.1 --port ${port}`,
+          command: `pnpm dev --webpack --hostname 127.0.0.1 --port ${port}`,
           url: baseURL,
           reuseExistingServer: !process.env.CI,
           stdout: "pipe" as const,

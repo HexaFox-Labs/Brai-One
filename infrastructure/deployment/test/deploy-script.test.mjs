@@ -35,6 +35,8 @@ describe("fixed host deployment command", () => {
     expect(switchCurrent).toBeGreaterThan(rollout);
     expect(source).toContain("--no-build");
     expect(source).toContain("--pull never");
+    expect(source).toContain("=ghcr\\.io/[a-z0-9_.-]+/[a-z0-9_.-]+@sha256:");
+    expect(source).not.toContain("/brai-[a-z-]+@sha256:");
     expect(source).toContain("--wait");
     expect(source).toContain("node dist/provision-runtime-role.js");
     expect(source).toContain("node dist/audit-runtime-role.js");

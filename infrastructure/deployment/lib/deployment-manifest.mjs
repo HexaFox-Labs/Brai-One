@@ -1,5 +1,5 @@
 const DEPLOYMENT_SCHEMA_VERSION = "brai.deployment.images.v1";
-const HOST_CONTRACT_VERSION = "brai.production-host.v2";
+const HOST_CONTRACT_VERSION = "brai.production-host.v3";
 const IMAGE_NAMES = [
   "web",
   "api-gateway",

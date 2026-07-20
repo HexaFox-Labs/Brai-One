@@ -32,6 +32,21 @@ explicit protected release action after all release checks are green. A runtime
 delivery check SHALL remain green only after its health-gated controller result
 and exact target manifest have both been persisted; its job MUST authenticate
 to GHCR before publishing either Dev or Preview/release manifest.
+Every `dev` revision and every promotable `release/*` revision MUST have an
+exact immutable manifest even when the revision changes no runtime image; such
+a manifest-only carry-forward MUST NOT rebuild or restart runtime services.
+Dev affected calculation MUST start from the source revision of the actually
+published current Dev manifest and MUST include skipped intermediate commits
+after a replaced pending workflow run. Release affected calculation MUST use
+the frozen Dev merge-base.
+The protected `dev` branch MUST require an exact owner-issued runtime
+acceptance status for Preview-requiring revisions and MUST NOT permit a manual
+merge to bypass that status. Production manifests MUST use the explicit host
+contract version installed on the receiver and MUST accept only the
+repository-linked single-package GHCR digest form. A protected production
+rollback MAY select a previously persisted exact environment revision but MUST
+NOT rebuild its images or accept a mutable tag. An explicit rollback revision
+MUST resolve through an exact Dev manifest, never an unmerged feature Preview.
 
 #### Scenario: Accepted feature revision merges to dev
 
@@ -39,6 +54,30 @@ to GHCR before publishing either Dev or Preview/release manifest.
   checks remain green
 - **THEN** GitHub native auto-merge may merge that exact pull request to `dev`
 - **AND** the dev manifest deploys only the affected image changes
+
+#### Scenario: Non-runtime Dev revision advances source history
+
+- **WHEN** a green Dev merge changes no runtime image
+- **THEN** delivery publishes an exact Dev manifest containing the preceding
+  seven validated image digests and the new Dev source revision
+- **AND** it does not build an image, invoke the controller or restart a
+  container
+
+#### Scenario: Newly created release branch freezes Dev
+
+- **WHEN** a `release/*` branch is created at an exact Dev revision and GitHub
+  reports an all-zero previous SHA
+- **THEN** affected calculation uses the exact Dev base and selects no runtime
+  rebuild
+- **AND** the release remains promotable through an exact manifest
+
+#### Scenario: A pending Dev run is replaced by a newer merge
+
+- **WHEN** GitHub skips an intermediate pending delivery while a prior Dev run
+  is still executing
+- **THEN** the surviving run reads the last actually published Dev revision
+  and computes affected changes through its own head
+- **AND** every runtime change from the skipped commit is still built or reused
 
 #### Scenario: Preview manifest persistence fails after a healthy deploy
 
@@ -53,6 +92,14 @@ to GHCR before publishing either Dev or Preview/release manifest.
 - **THEN** no production deployment is performed solely because of that push
 - **AND** production remains on its prior healthy manifest until explicit
   release promotion
+
+#### Scenario: Operator rolls production back to a persisted revision
+
+- **WHEN** the protected production action is explicitly approved with a
+  previously persisted exact 40-character revision
+- **THEN** it submits that revision's immutable digest manifest to the fixed
+  receiver
+- **AND** no image is rebuilt and no mutable image tag enters production
 
 ### Requirement: Preview slots are isolated, ordered and recoverable
 
@@ -112,10 +159,10 @@ delivery workflows SHALL use least-privilege tokens and protected environments.
 
 The controller SHALL authorize preview cleanup and owner acceptance only from
 documented GitHub Actions OIDC claims: repository, repository visibility,
-workflow reference, event name, head branch and, for acceptance, base branch.
+workflow reference, event name and a branch-bound trusted ref.
 It MUST NOT require GitHub event-payload-only fields that are absent from an
-OIDC token. The exact trusted cleanup and acceptance workflow triggers MUST
-constrain their respective closed-pull-request and submitted-review activities.
+OIDC token. The exact trusted cleanup and acceptance workflows MUST constrain
+their respective closed-pull-request and owner-dispatched activities.
 
 #### Scenario: Closed pull request releases its preview with a normal OIDC token
 
@@ -126,7 +173,7 @@ constrain their respective closed-pull-request and submitted-review activities.
 
 #### Scenario: A differently scoped token requests lifecycle access
 
-- **WHEN** a token has a different repository, workflow, event, head branch or
-  acceptance base branch
+- **WHEN** a token has a different repository, workflow, event, cleanup branch
+  or acceptance workflow ref
 - **THEN** the controller rejects the request before changing preview state or
   reporting an acceptance status

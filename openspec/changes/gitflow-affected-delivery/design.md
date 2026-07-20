@@ -56,6 +56,14 @@ from `main` and return to `dev` after production promotion.
 This retains GitHub's protected merge mechanism instead of scripting a merge
 before checks finish, which was the proven legacy race.
 
+Runtime acceptance is a required commit status on `dev`, not merely an
+auto-merge convenience. Only an owner-dispatched trusted workflow may write
+that status after the controller confirms the exact branch revision. This
+prevents a manual squash merge from bypassing Preview and avoids GitHub's
+impossible self-review path when the repository owner authored the pull
+request. Non-runtime revisions receive the same status automatically after
+their reduced delivery plan proves that no Preview is required.
+
 ### Impact classification is declarative and fail-closed
 
 An in-repository delivery catalog maps Nx projects, Docker images, runtime
@@ -89,8 +97,38 @@ exact Dev manifest when a frozen release branch has no runtime difference.
 Runtime delivery keeps squash as the sole allowed GitHub merge method so one
 Dev push cannot expose only a prefix of a multi-commit accepted Preview.
 
-The existing production manifest/host contract is retained and generalized;
-admin images are one-off migration tools, not long-lived preview services.
+Every Dev SHA also receives an immutable manifest, including non-runtime
+merges. A non-runtime push copies only the seven validated digest references
+from the last exact environment manifest, changes the recorded source revision
+and publishes a sub-kilobyte manifest artifact; it does not contact the
+controller, restart a container or rebuild an image. A newly created
+`release/*` branch resolves against the merge-base with `origin/dev`, so a
+frozen Dev revision produces no false full-workspace build. Non-runtime release
+revisions use the same manifest-only carry-forward and therefore remain exact
+promotion inputs without allocating a Preview slot.
+
+GitHub concurrency can replace an older pending run when several Dev commits
+arrive quickly. A Dev push therefore ignores `event.before` as its delivery
+base and reads the exact source revision from the validated `dev-current`
+manifest. It proves that revision is an ancestor of the new head and computes
+the whole accumulated affected range. Thus a later run cannot lose a skipped
+intermediate runtime commit. Push runs are not canceled while executing; PR
+runs remain cancelable because only their newest head is relevant. Release
+runs always compare their head to frozen Dev, trading a possible repeated
+affected check for omission-free release composition.
+
+The production receiver accepts only the single repository-linked GHCR package
+reference used by delivery,
+`ghcr.io/hexafox-labs/brai-one@sha256:<digest>`. Correcting this invariant bumps
+the explicit host contract to `brai.production-host.v3`, so an unupdated host
+rejects the new manifest instead of interpreting it under obsolete rules.
+Admin images are one-off migration tools, not long-lived preview services.
+The protected production dispatch accepts an optional exact 40-character
+revision, allowing an operator-approved rollback to a previously persisted
+trusted Dev manifest without rebuilding an image. Restricting the override to
+Dev prevents an accidental promotion of an unmerged feature Preview. An omitted
+revision promotes the release branch head from its release Preview or exact Dev
+manifest.
 
 ### Terminal manifest persistence is target-neutral
 
@@ -169,18 +207,22 @@ the host deploy account accepts only the fixed manifest command.
 ### Lifecycle authorization uses the published OIDC contract
 
 The preview cleanup and owner-acceptance endpoints bind a token to the expected
-repository, public visibility, exact workflow filename, event name and exact
-head branch; acceptance additionally binds the base branch to `dev`. They use
-only claims documented for GitHub Actions OIDC. In particular, GitHub's event
-payload field `action` is not an OIDC claim and MUST NOT become a controller
-requirement.
+repository, public visibility, exact workflow filename and event name. Cleanup
+also binds the exact head branch; acceptance binds the trusted workflow to the
+protected `dev` ref and checks the requested branch against controller state.
+They use only claims documented for GitHub Actions OIDC. In particular,
+GitHub's event payload field `action` is not an OIDC claim and MUST NOT become
+a controller requirement.
 
 The corresponding trusted workflow files constrain the activity themselves:
 `preview-cleanup.yml` listens only for closed pull requests and
-`enable-runtime-automerge.yml` only for submitted reviews. This preserves the
-least-privilege boundary without depending on an undocumented JWT shape. Unit
-tests use real-contract-shaped claims that deliberately omit `action` and still
-reject a different repository, workflow, event or branch.
+`enable-runtime-automerge.yml` accepts only an owner-issued dispatch from the
+protected `dev` ref. The latter reads the current pull request state through
+GitHub's API before it asks the controller about the exact deployed revision.
+This preserves the least-privilege boundary without depending on an
+undocumented JWT shape. Unit tests use real-contract-shaped claims that
+deliberately omit `action` and still reject a different repository, workflow,
+event or branch.
 
 ## Risks / Trade-offs
 
@@ -202,6 +244,13 @@ reject a different repository, workflow, event or branch.
 - [A lifecycle endpoint depends on an undocumented OIDC field] → bind it only
   to documented claims, keep the narrow event activity in trusted workflow YAML
   and test tokens that omit event-payload-only fields.
+- [GitHub replaces a pending Dev delivery during a rapid merge burst] → derive
+  the next affected base from the actually published `dev-current` revision,
+  verify ancestry and accumulate every skipped commit in the surviving run.
+- [The local many-core host makes Turbopack dev compilation exhaust the
+  Playwright startup window] → keep production on its normal optimized build,
+  but start only the E2E webServer through Next.js's supported `--webpack`
+  compatibility mode for deterministic readiness.
 
 ## Migration Plan
 
