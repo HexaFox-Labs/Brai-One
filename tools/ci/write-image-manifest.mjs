@@ -81,7 +81,7 @@ await writeFile(
   `${JSON.stringify(
     {
       schema_version: "brai.deployment.images.v1",
-      host_contract_version: "brai.production-host.v2",
+      host_contract_version: "brai.production-host.v3",
       source_repository: sourceRepository,
       source_revision: sourceRevision,
       images,

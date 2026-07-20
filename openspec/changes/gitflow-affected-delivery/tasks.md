@@ -11,6 +11,9 @@
 - [x] 2.3 Add dev, preview, release and explicit production-promotion workflows with exact revision checks and concurrency controls.
 - [x] 2.4 Add repository policy script and operator instructions for protected branches, environments, auto-merge and fork workflow denial.
 - [x] 2.5 Make GHCR authentication a shared terminal prerequisite for Dev and Preview/release manifests, with a workflow-policy regression test.
+- [x] 2.6 Require an exact owner-issued runtime acceptance status on `dev` so manual merge cannot bypass Preview, and replace the impossible self-review trigger with an owner-only dispatch.
+- [x] 2.7 Carry immutable image manifests across non-runtime Dev/release revisions, derive Dev affected scope from the actually published manifest to survive replaced pending runs, and resolve release branches against the exact frozen Dev base without rebuilding unrelated runtime images.
+- [x] 2.8 Accept the repository's single-package GHCR digest format in a bumped fail-closed production host contract, support protected exact-revision rollback and add regression coverage.
 
 ## 3. Preview controller and host contracts
 
@@ -31,7 +34,7 @@
 ## 5. Validation and migration
 
 - [x] 5.1 Add focused tests for classification, manifests, slot lifecycle, rejection and rollback.
-- [x] 5.2 Run formatting, targeted Nx checks, deployment/Compose tests, OpenSpec validation and security policy checks.
+- [x] 5.2 Run formatting, targeted Nx checks, deployment/Compose tests, OpenSpec validation and security policy checks; keep the Playwright-only webServer bounded on the many-core host.
 - [ ] 5.3 Complete terminal GitHub workflow verification on a controlled branch: Dev and Preview/release both persist their exact immutable manifests and remain green.
 - [ ] 5.4 Complete real p01 HTTPS validation, merge-triggered cleanup and slot release without changing legacy traffic.
 - [ ] 5.5 Perform owner-approved legacy dev cutover, capacity baseline and real branch/release/rollback verification.

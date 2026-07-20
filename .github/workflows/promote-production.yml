@@ -2,6 +2,11 @@ name: promote-production
 
 on:
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Optional exact persisted revision for a protected rollback.
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -18,10 +23,20 @@ jobs:
       - name: Fetch the immutable manifest from this release preview or Dev
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
-          REVISION: ${{ github.sha }}
+          REVISION: ${{ inputs.revision || github.sha }}
+          ROLLBACK_REVISION: ${{ inputs.revision }}
         run: |
           set -euo pipefail
-          for source in preview dev; do
+          if [[ ! "$REVISION" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Production revision must be a full lowercase Git SHA" >&2
+            exit 1
+          fi
+          if [[ -n "$ROLLBACK_REVISION" ]]; then
+            sources=(dev)
+          else
+            sources=(preview dev)
+          fi
+          for source in "${sources[@]}"; do
             image="ghcr.io/${GITHUB_REPOSITORY,,}:brai-delivery-manifest-${source}-${REVISION}"
             if docker pull "$image"; then break; fi
             image=""
@@ -37,7 +52,7 @@ jobs:
       - name: Convert and validate the fixed production receiver manifest
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
-          REVISION: ${{ github.sha }}
+          REVISION: ${{ inputs.revision || github.sha }}
         run: |
           node --input-type=module <<'NODE'
           import { readFile, writeFile } from "node:fs/promises";
@@ -59,7 +74,7 @@ jobs:
           }
           await writeFile("production-manifest.json", `${JSON.stringify({
             schema_version: "brai.deployment.images.v1",
-            host_contract_version: "brai.production-host.v2",
+            host_contract_version: "brai.production-host.v3",
             source_repository: process.env.GITHUB_REPOSITORY,
             source_revision: process.env.REVISION,
             images,

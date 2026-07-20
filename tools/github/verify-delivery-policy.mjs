@@ -45,6 +45,10 @@ assert(
   "dev must require affected-verify",
 );
 assert(
+  dev.required_status_checks?.contexts?.includes("runtime-acceptance"),
+  "dev must require exact runtime acceptance",
+);
+assert(
   endpoint.value === "https://preview-01.brai.one/__brai-delivery",
   "Delivery endpoint must target the controller Caddy route",
 );

@@ -17,7 +17,7 @@ on:
 
 concurrency:
   group: affected-delivery-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -37,6 +37,7 @@ jobs:
       build_matrix: ${{ steps.plan.outputs.build_matrix }}
       revision: ${{ steps.revision.outputs.sha }}
       branch: ${{ steps.revision.outputs.branch }}
+      base: ${{ steps.revision.outputs.base }}
     steps:
       - name: Checkout exact trusted revision and merge base
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -61,16 +62,47 @@ jobs:
       - name: Resolve exact source revision and branch
         id: revision
         env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_SHA: ${{ github.event.pull_request.head.sha }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          BOOTSTRAP_DEV: ${{ inputs.bootstrap_dev }}
         run: |
           set -euo pipefail
+          base=${PR_BASE_SHA:-${PUSH_BASE_SHA:-0000000000000000000000000000000000000000}}
+          if [[ "$GITHUB_REF_NAME" == dev && "$BOOTSTRAP_DEV" != true ]]; then
+            image="ghcr.io/${GITHUB_REPOSITORY,,}:brai-delivery-manifest-dev-current"
+            docker pull "$image"
+            container=$(docker create "$image")
+            trap 'docker rm -f "$container" >/dev/null' EXIT
+            docker cp "$container:/manifest.json" current-dev-manifest.json
+            base=$(node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+          import { overlayManifest } from "./infrastructure/delivery/controller/image-manifest.mjs";
+          const source = JSON.parse(await readFile("current-dev-manifest.json", "utf8"));
+          if (
+            source.schemaVersion !== "brai.delivery.manifest.v1" ||
+            source.repository !== process.env.GITHUB_REPOSITORY
+          ) {
+            throw new Error("Current Dev manifest has an unexpected identity");
+          }
+          process.stdout.write(overlayManifest(source.images, {}, source.revision).revision);
+          NODE
+            )
+            if ! git merge-base --is-ancestor "$base" "${PR_SHA:-$GITHUB_SHA}"; then
+              echo "Published Dev revision is not an ancestor of the requested head" >&2
+              exit 1
+            fi
+          elif [[ "$GITHUB_REF_NAME" == release/* ]]; then
+            base=$(git merge-base origin/dev "${PR_SHA:-$GITHUB_SHA}")
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "sha=${PR_SHA:-$GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           echo "branch=${PR_BRANCH:-$GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Run only declared affected checks
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '0000000000000000000000000000000000000000' }}
+          BASE_SHA: ${{ steps.revision.outputs.base }}
           HEAD_SHA: ${{ steps.revision.outputs.sha }}
           BOOTSTRAP_DEV: ${{ inputs.bootstrap_dev }}
         run: |
@@ -84,7 +116,7 @@ jobs:
       - name: Compute delivery plan
         id: plan
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '0000000000000000000000000000000000000000' }}
+          BASE_SHA: ${{ steps.revision.outputs.base }}
           HEAD_SHA: ${{ steps.revision.outputs.sha }}
           BOOTSTRAP_DEV: ${{ inputs.bootstrap_dev }}
         run: |
@@ -103,6 +135,134 @@ jobs:
           path: impact.json
           if-no-files-found: error
           retention-days: 1
+
+  carry-forward-manifest:
+    name: carry-forward-exact-manifest
+    needs: verify-and-plan
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref_name == 'dev' || startsWith(github.ref_name, 'release/')) &&
+      needs.verify-and-plan.outputs.requires_image_build != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout the validated manifest transformer
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.verify-and-plan.outputs.revision }}
+          persist-credentials: false
+
+      - name: Set up the tiny manifest builder
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Log into GHCR for exact manifest carry-forward
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read the exact preceding environment manifest
+        env:
+          BASE_REVISION: ${{ needs.verify-and-plan.outputs.base }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: ${{ needs.verify-and-plan.outputs.branch }}
+        run: |
+          set -euo pipefail
+          root="ghcr.io/${GITHUB_REPOSITORY,,}"
+          if [[ "$TARGET_BRANCH" == dev ]]; then
+            candidates=("${root}:brai-delivery-manifest-dev-current")
+          else
+            candidates=(
+              "${root}:brai-delivery-manifest-preview-${BASE_REVISION}"
+              "${root}:brai-delivery-manifest-dev-${BASE_REVISION}"
+            )
+          fi
+          source_image=
+          for candidate in "${candidates[@]}"; do
+            if docker pull "$candidate"; then
+              source_image=$candidate
+              break
+            fi
+          done
+          if [[ -z "$source_image" ]]; then
+            echo "No exact preceding environment manifest is available" >&2
+            exit 1
+          fi
+          container=$(docker create "$source_image")
+          trap 'docker rm -f "$container" >/dev/null' EXIT
+          docker cp "$container:/manifest.json" source-manifest.json
+
+      - name: Advance metadata without rebuilding or restarting runtime
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ needs.verify-and-plan.outputs.revision }}
+          TARGET_BRANCH: ${{ needs.verify-and-plan.outputs.branch }}
+        run: |
+          set -euo pipefail
+          mkdir manifest-state
+          node tools/ci/carry-forward-delivery-manifest.mjs \
+            source-manifest.json manifest-state/manifest.json "$REVISION"
+          printf 'FROM scratch\nCOPY manifest.json /manifest.json\n' \
+            > manifest-state/Dockerfile
+          root="ghcr.io/${GITHUB_REPOSITORY,,}"
+          if [[ "$TARGET_BRANCH" == dev ]]; then
+            tags=(
+              --tag "${root}:brai-delivery-manifest-dev-current"
+              --tag "${root}:brai-delivery-manifest-dev-${REVISION}"
+            )
+          else
+            tags=(
+              --tag "${root}:brai-delivery-manifest-preview-${REVISION}"
+            )
+          fi
+          docker buildx build --provenance=false --push \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            "${tags[@]}" manifest-state
+
+  accept-non-runtime:
+    name: accept-non-runtime-revision
+    needs: verify-and-plan
+    if: >-
+      github.event_name == 'pull_request' &&
+      needs.verify-and-plan.outputs.requires_preview != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Mark this exact non-runtime revision as not requiring acceptance
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REVISION: ${{ needs.verify-and-plan.outputs.revision }}
+        run: |
+          node --input-type=module <<'NODE'
+          const response = await fetch(
+            `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/statuses/${process.env.REVISION}`,
+            {
+              method: "POST",
+              headers: {
+                accept: "application/vnd.github+json",
+                authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+                "content-type": "application/json",
+                "x-github-api-version": "2022-11-28",
+              },
+              body: JSON.stringify({
+                context: "runtime-acceptance",
+                description: "Preview is not required for this revision",
+                state: "success",
+              }),
+            },
+          );
+          if (!response.ok) {
+            throw new Error(`Cannot record non-runtime acceptance: ${response.status}`);
+          }
+          NODE
 
   build-images:
     name: build-affected-image (${{ matrix.image.image }})

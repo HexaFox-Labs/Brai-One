@@ -24,7 +24,7 @@ The host-owned deployment root is `/srv/opt/brai-new-deploy`:
 `receive-release` accepts at most 64 KiB on standard input. It rejects unknown
 fields, tags, a wrong repository, a partial image set, and every reference that
 is not the exact expected GHCR path plus `sha256` digest. It writes no project
-file. The explicit `brai.production-host.v2` contract also makes a newer CI
+file. The explicit `brai.production-host.v3` contract also makes a newer CI
 manifest fail closed on older host tooling instead of guessing compatibility.
 
 The locked deploy command then:
@@ -108,8 +108,8 @@ An administrator must:
    `sudo -l`, so a broad rule inherited from any other sudoers file or group is
    rejected even when the managed file itself is correct.
 
-4. configure the GitHub Environment named `production`, restrict it to the
-   protected `main` branch, require approval, and add only:
+4. configure the GitHub Environment named `production`, restrict it to
+   `release/*`, require approval, and add only:
    `BRAI_PRODUCTION_DEPLOY_PRIVATE_KEY` and
    `BRAI_PRODUCTION_SSH_KNOWN_HOSTS`;
 5. confirm
@@ -154,6 +154,13 @@ the version mismatch intentionally blocks deployment.
 The first digest deployment has no previous digest release to restore. Perform
 that one transition in a maintenance window and verify it before relying on
 automatic image rollback for subsequent releases.
+
+The protected promotion workflow normally uses the selected release branch
+head. Its optional `revision` input is only for an approved rollback to a
+previously persisted exact Dev manifest and never reads an unmerged feature
+Preview for that override. It rejects a short or
+non-lowercase SHA, never rebuilds an image, and still passes through the same
+production Environment and fixed receiver.
 
 Installing or changing this host tooling is an environment change and must be
 recorded in `/home/mark/DEPLOYMENT.md` in the same host change. Merely keeping

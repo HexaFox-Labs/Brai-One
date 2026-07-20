@@ -70,7 +70,7 @@ if [[ ${#image_lines[@]} -ne 7 ]]; then
   exit 1
 fi
 for image_line in "${image_lines[@]}"; do
-  if [[ ! ${image_line} =~ =ghcr\.io/[a-z0-9_.-]+/[a-z0-9_.-]+/brai-[a-z-]+@sha256:[0-9a-f]{64}$ ]]; then
+  if [[ ! ${image_line} =~ =ghcr\.io/[a-z0-9_.-]+/[a-z0-9_.-]+@sha256:[0-9a-f]{64}$ ]]; then
     echo "Release environment contains a non-digest image reference" >&2
     exit 1
   fi

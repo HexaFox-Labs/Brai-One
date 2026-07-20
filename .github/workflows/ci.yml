@@ -50,4 +50,9 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: node tools/ci/run-affected.mjs --base="$BASE_SHA" --head="$HEAD_SHA"
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" == release/* ]]; then
+            BASE_SHA=$(git merge-base origin/dev "$HEAD_SHA")
+          fi
+          node tools/ci/run-affected.mjs --base="$BASE_SHA" --head="$HEAD_SHA"
